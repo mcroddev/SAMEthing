@@ -1,0 +1,67 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 26,
+    "patch": 4
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "hidden": true,
+      "description": "Default build using Ninja generator",
+      "generator": "Ninja"
+    },
+    {
+      "name": "Unix",
+      "hidden": true,
+      "description": "Default configuration on Unix hosts",
+      "inherits": "default",
+      "cmakeExecutable": "${sourceDir}/toolchains/unix/assets/cmake/bin/cmake",
+      "toolchainFile": "${sourceDir}/cmake/toolchain-unix.cmake",
+      "cacheVariables": {
+        "CMAKE_MAKE_PROGRAM": {
+          "type": "FILEPATH",
+          "value": "${sourceDir}/toolchains/unix/assets/ninja/bin/ninja"
+        }
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "Debug",
+      "hidden": true,
+      "description": "Sets cache variables for debug build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Debug"
+        }
+      }
+    },
+    {
+      "name": "UnitTests",
+      "hidden": true,
+      "description": "Sets cache variables for unit tests",
+      "cacheVariables": {
+        "SAMETHING_BUILD_TESTS": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
+      "name": "UnixLLVMDebugUnitTests",
+      "displayName": "Build samething unit tests in Debug mode",
+      "inherits": [
+        "Unix",
+        "Debug",
+        "UnitTests"
+      ],
+      "binaryDir": "${sourceDir}/build/llvm-unit-tests-debug"
+    }
+  ]
+}
