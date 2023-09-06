@@ -41,8 +41,8 @@ project(samething
 # toolchain.
 if (NOT CMAKE_TOOLCHAIN_FILE)
   message(FATAL_ERROR "A toolchain file is required to be specified. Please "
-                      "consider one of the presets to do this for you.")
-endif()
+          "consider one of the presets to do this for you.")
+endif ()
 
 # Generate a "compile_commands.json" file containing the exact compiler calls
 # for all translation units of a project in machine-readable form. This is
@@ -54,15 +54,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 function(samething_build_type_default_set BUILD_TYPE_DEFAULT)
   if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting the build type to '${BUILD_TYPE_DEFAULT}' as none "
-                   "was specified.")
+            "was specified.")
 
     set(CMAKE_BUILD_TYPE "${BUILD_TYPE_DEFAULT}" CACHE STRING
         "Choose the type of build." FORCE)
 
     # Set the possible values of build type for cmake-gui.
     set_property(CACHE CMAKE_BUILD_TYPE
-      PROPERTY STRINGS "Debug" "Release")
-  endif()
+                 PROPERTY STRINGS "Debug" "Release")
+  endif ()
 endfunction()
 
 # Configures the project wide build settings for C targets.
@@ -74,6 +74,10 @@ function(samething_build_settings_c_configure)
   target_compile_features(samething-build-settings-c INTERFACE
                           c_std_17)
 
+  if (SAMETHING_BUILD_TESTS)
+    target_compile_definitions(samething-build-settings-c INTERFACE SAMETHING_TESTING)
+  endif ()
+
   if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
     target_compile_options(samething-build-settings-c INTERFACE
                            -Wall -Werror -Wextra)
@@ -82,16 +86,16 @@ function(samething_build_settings_c_configure)
       target_compile_options(samething-build-settings-c INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       target_compile_options(samething-build-settings-c INTERFACE -Ofast)
-    else()
+    else ()
       message(FATAL_ERROR "Unable to set project wide build settings for C "
-                          "targets: the build type ${CMAKE_BUILD_TYPE} is "
-                          "unhandled!")
-    endif()
-  else()
+              "targets: the build type ${CMAKE_BUILD_TYPE} is "
+              "unhandled!")
+    endif ()
+  else ()
     message(FATAL_ERROR "Unable to set project wide build settings for C "
-                        "targets: the C compiler ${CMAKE_C_COMPILER_ID} is "
-                        "unhandled!")
-  endif()
+            "targets: the C compiler ${CMAKE_C_COMPILER_ID} is "
+            "unhandled!")
+  endif ()
 endfunction()
 
 # Configures the project wide build settings for C++ targets.
@@ -103,6 +107,10 @@ function(samething_build_settings_cpp_configure)
   target_compile_features(samething-build-settings-cpp INTERFACE
                           cxx_std_17)
 
+  if (SAMETHING_BUILD_TESTS)
+    target_compile_definitions(samething-build-settings-cpp INTERFACE SAMETHING_TESTING)
+  endif ()
+
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(samething-build-settings-cpp INTERFACE
                            -Wall -Werror -Wextra)
@@ -111,16 +119,16 @@ function(samething_build_settings_cpp_configure)
       target_compile_options(samething-build-settings-cpp INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       target_compile_options(samething-build-settings-cpp INTERFACE -Ofast)
-    else()
+    else ()
       message(FATAL_ERROR "Unable to set project wide build settings for C++ "
-                          "targets: the build type ${CMAKE_BUILD_TYPE} is "
-                          "unhandled!")
-    endif()
-  else()
+              "targets: the build type ${CMAKE_BUILD_TYPE} is "
+              "unhandled!")
+    endif ()
+  else ()
     message(FATAL_ERROR "Unable to set project wide build settings for C++ "
-                        "targets: the C++ compiler ${CMAKE_CXX_COMPILER_ID} is "
-                        "unhandled!")
-  endif()
+            "targets: the C++ compiler ${CMAKE_CXX_COMPILER_ID} is "
+            "unhandled!")
+  endif ()
 endfunction()
 
 function(samething_options_handle)
@@ -138,9 +146,9 @@ function(samething_tests_enable)
   # philosophy, this is the recommended way to pull in googletest according to
   # https://google.github.io/googletest/quickstart-cmake.html.
   FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG main
+          googletest
+          GIT_REPOSITORY https://github.com/google/googletest.git
+          GIT_TAG main
   )
 
   # For Windows: Prevent overriding the parent project's compiler/linker
@@ -150,6 +158,8 @@ function(samething_tests_enable)
   FetchContent_MakeAvailable(googletest)
 
   include(GoogleTest)
+  include(cmake/test_helpers.cmake)
+
   enable_testing()
 endfunction()
 
@@ -161,7 +171,7 @@ samething_options_handle()
 
 if (SAMETHING_BUILD_TESTS)
   samething_tests_enable()
-endif()
+endif ()
 
 # Continue with the build process.
 add_subdirectory(src)

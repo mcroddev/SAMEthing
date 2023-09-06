@@ -20,14 +20,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-set(SAMETHING_TOOLCHAIN_PATH
-  "${PROJECT_SOURCE_DIR}/toolchains/unix/assets")
+function(samething_test_add TEST_NAME TEST_SRC LIBS)
+  add_executable(${TEST_NAME} ${TEST_SRC})
+  target_link_libraries(${TEST_NAME} PRIVATE
+                        ${LIBS} samething-build-settings-cpp GTest::gtest_main)
 
-set(CMAKE_C_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang")
-set(CMAKE_CXX_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang++")
-
-# XXX: This might be a problem...
-#set(CMAKE_LINKER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/lld")
-
-set(CMAKE_AR "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ar")
-set(CMAKE_RANLIB "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ranlib")
+  gtest_discover_tests(${TEST_NAME})
+endfunction()

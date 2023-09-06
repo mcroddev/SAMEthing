@@ -20,14 +20,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-set(SAMETHING_TOOLCHAIN_PATH
-  "${PROJECT_SOURCE_DIR}/toolchains/unix/assets")
+# First, compile the core itself.
+add_subdirectory(src)
 
-set(CMAKE_C_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang")
-set(CMAKE_CXX_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang++")
-
-# XXX: This might be a problem...
-#set(CMAKE_LINKER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/lld")
-
-set(CMAKE_AR "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ar")
-set(CMAKE_RANLIB "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ranlib")
+# Now, compile any tests if needed.
+if (SAMETHING_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
