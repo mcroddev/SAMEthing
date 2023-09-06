@@ -117,24 +117,59 @@ extern "C" {
 /// The maximum amount of time an attention signal can last for.
 #define SAMETHING_CORE_ATTN_SIG_MAX (25.0F)
 
-enum samething_core_gen_state {
+/// Defines the generation sequence states. The sequence states are laid out in
+/// order of *sequence* of the SAME header.
+enum samething_core_seq_state {
+  /// First AFSK burst of header
   SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_FIRST,
+
+  /// Second AFSK burst of header
   SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_SECOND,
+
+  /// Third AFSK burst of header
   SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_THIRD,
+
+  /// Attention signal for 8..25 seconds
   SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH,
+
+  /// First AFSK burst of EOM
   SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH,
+
+  /// Second AFSK burst of EOM
   SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH,
+
+  /// Third AFSK burst of EOM
   SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD,
+
+  /// 1 second of silence
   SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH,
+
+  /// The total number of sequence states.
   SAMETHING_CORE_GEN_STATE_NUM
 };
 
+/// Defines the header to be used for generating a full SAME header. This is
+/// what users should be using.
+///
+/// Be aware that no error checking takes place here!
 struct samething_core_header {
   /// Indicates the geographic areas affected by the EAS alert.
   char location_codes[SAMETHING_CORE_LOCATION_CODE_NUM_MAX]
@@ -157,6 +192,7 @@ struct samething_core_header {
   /// Indicates when the message was initially released by the originator.
   char originator_time[SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX + 1];
 
+  /// How long will the attention signal last for?
   float attn_sig_duration;
 };
 
@@ -166,13 +202,24 @@ struct samething_core_header {
 /// call to the samething_core_samples_gen function.
 struct samething_core_gen_ctx {
   // The buffer containing the audio samples.
-  int16_t data[SAMETHING_CORE_SAMPLES_NUM_MAX];
+  int16_t sample_data[SAMETHING_CORE_SAMPLES_NUM_MAX];
 
   /// The header data to generate an AFSK burst from.
   uint8_t header_data[SAMETHING_CORE_HEADER_SIZE_MAX];
 
   /// The number of samples remaining for each state of the generation.
-  int state_samples_remaining[SAMETHING_CORE_GEN_STATE_NUM];
+  unsigned int seq_samples_remaining[SAMETHING_CORE_GEN_STATE_NUM];
+
+  struct {
+    /// The current position within the data.
+    size_t data_pos;
+
+    /// The current bit we're generating a sine wave for.
+    int bit_pos;
+
+    /// The current sample we're generating.
+    int sample_num;
+  } afsk;
 
   /// The actual size of the header to care about.
   size_t header_size;
@@ -180,36 +227,57 @@ struct samething_core_gen_ctx {
   /// The maximum number of samples we should generate.
   int samples_num_max;
 
-  /// The current generation state.
-  enum samething_core_gen_state gen_state;
+  /// The current sequence of the generation.
+  enum samething_core_seq_state seq_state;
 
-  struct {
-    size_t data_pos;
-    int bit_pos;
-    int sample_num;
-  } afsk;
-
-  struct {
-    int sample_num;
-  } attn_sig;
+  unsigned int attn_sig_sample_num;
 };
 
 #ifdef SAMETHING_TESTING
+/// Generates an Audio Frequency Shift Keying (AFSK) burst.
+///
+/// @param ctx The generation context in use, which stores the state of the
+///            generation.
+/// @param data The data to generate an AFSK burst from.
+/// @param data_size The size of the data to generate an AFSK burst from.
+/// @param num_samples The number of samples to generate.
 void samething_core_afsk_gen(struct samething_core_gen_ctx *const ctx,
                              const uint8_t *const data, const size_t data_size,
                              size_t num_samples);
 
+/// Generates silence for a period of 1 second.
+///
+/// @param ctx The generation context in use, which stores the state of the
+///            generation.
+/// @param num_samples The number of samples to generate.
 void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
-                                const size_t num_samples);
+                                size_t num_samples);
 
+/// Generates the attention signal.
+///
+/// @param ctx The generation context in use, which stores the state of the
+///            generation.
+/// @param num_samples The number of samples to generate.
 void samething_core_attn_sig_gen(struct samething_core_gen_ctx *const ctx,
-                                 const size_t num_samples);
+                                 size_t num_samples);
 
+/// Adds a field to the data.
+///
+/// A field is defined as any portion of the SAME header which must be populated
+/// (e.g., originator code, event code).
+///
+/// @param data The data to append the field to.
+/// \param data_size The new occupied space of the data.
+/// \param field The field to append.
+/// \param field_len The length of the field to append.
 void samething_core_field_add(uint8_t *const data, size_t *data_size,
                               const char *const field, const size_t field_len);
 #endif  // SAMETHING_TESTING
 
 /// Configures a generation context to generate the specified header.
+///
+/// @param ctx The generation context.
+/// @param header The header data to generate a SAME header from.
 void samething_core_ctx_config(
     struct samething_core_gen_ctx *const ctx,
     const struct samething_core_header *const header);

@@ -92,44 +92,10 @@ SAMETHING_CORE_STATIC void samething_core_field_add(uint8_t *const data,
   data[(*data_size)++] = '-';
 }
 
-SAMETHING_CORE_STATIC void samething_core_afsk_gen_header(
-    struct samething_core_gen_ctx *const ctx, const size_t num_samples) {
-  samething_core_afsk_gen(ctx, ctx->header_data, ctx->header_size, num_samples);
-}
-
-SAMETHING_CORE_STATIC void samething_core_afsk_gen_eom(
-    struct samething_core_gen_ctx *const ctx, const size_t num_samples) {
-  static const uint8_t
-      SAMETHING_CORE_EOM_HEADER[SAMETHING_CORE_EOM_HEADER_SIZE] = {
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          SAMETHING_CORE_PREAMBLE,
-          'N',
-          'N',
-          'N',
-          'N'};
-
-  samething_core_afsk_gen(ctx, SAMETHING_CORE_EOM_HEADER,
-                          SAMETHING_CORE_EOM_HEADER_SIZE, num_samples);
-}
-
 SAMETHING_CORE_STATIC void samething_core_afsk_gen(
     struct samething_core_gen_ctx *const ctx, const uint8_t *const data,
     const size_t data_size, size_t num_samples) {
-  int16_t *samples = ctx->data;
+  int16_t *sample_data = ctx->sample_data;
 
   while (num_samples--) {
     const float freq = ((data[ctx->afsk.data_pos] >> ctx->afsk.bit_pos) & 1)
@@ -138,7 +104,7 @@ SAMETHING_CORE_STATIC void samething_core_afsk_gen(
 
     const float t = ctx->afsk.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-    *samples++ = sinf(M_PI * 2 * t * freq) * INT16_MAX;
+    *sample_data++ = sinf(M_PI * 2 * t * freq) * INT16_MAX;
     ctx->afsk.sample_num++;
 
     if (ctx->afsk.sample_num >= SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
@@ -161,24 +127,25 @@ SAMETHING_CORE_STATIC
 void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
                                 size_t num_samples) {
   while (num_samples--) {
-    ctx->data[num_samples] = 0;
+    ctx->sample_data[num_samples] = 0;
   }
 }
 
 SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
     struct samething_core_gen_ctx *const ctx, size_t num_samples) {
-  int16_t *data = ctx->data;
+  int16_t *sample_data = ctx->sample_data;
 
   while (num_samples--) {
-    const float t = ctx->attn_sig.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
+    const float t =
+        ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
     const float calc = M_PI * 2 * t;
 
-    *data++ =
+    *sample_data++ =
         (sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t) +
          sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t)) *
         INT16_MAX;
 
-    ctx->attn_sig.sample_num++;
+    ctx->attn_sig_sample_num++;
   }
 }
 
@@ -254,81 +221,117 @@ void samething_core_ctx_config(
 
   // clang-format off
 
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD] =
       SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
       data_size;
 
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD] =
   SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
   SAMETHING_CORE_EOM_HEADER_SIZE;
 
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIRST] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SECOND] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_THIRD] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH] =
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH] =
   SAMETHING_CORE_SILENCE_DURATION * SAMETHING_CORE_SAMPLE_RATE;
 
-  ctx->state_samples_remaining[SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL] =
   header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
 
   // clang-format on
 
   for (int i = 0; i < SAMETHING_CORE_GEN_STATE_NUM; ++i) {
-    ctx->samples_num_max += ctx->state_samples_remaining[i];
+    ctx->samples_num_max += ctx->seq_samples_remaining[i];
   }
 }
 
 void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
-  static void (*gen_table[])(struct samething_core_gen_ctx *const,
-                             const size_t) = {
-      &samething_core_afsk_gen_header,  // First AFSK burst of header
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_afsk_gen_header,  // Second AFSK burst of header
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_afsk_gen_header,  // Third AFSK burst of header
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_attn_sig_gen,     // Attention signal for 8..25 seconds
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_afsk_gen_eom,     // First AFSK burst of EOM
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_afsk_gen_eom,     // Second AFSK burst of EOM
-      &samething_core_silence_gen,      // 1 second of silence
-      &samething_core_afsk_gen_eom,     // Third AFSK burst of EOM
-      &samething_core_silence_gen,      // 1 second of silence
-  };
+  static const uint8_t
+      SAMETHING_CORE_EOM_HEADER[SAMETHING_CORE_EOM_HEADER_SIZE] = {
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          SAMETHING_CORE_PREAMBLE,
+          'N',
+          'N',
+          'N',
+          'N'};
 
-  if (ctx->gen_state >= SAMETHING_CORE_GEN_STATE_NUM) {
+  if (ctx->seq_state >= SAMETHING_CORE_GEN_STATE_NUM) {
+    // Tried to generate a SAME header using a context for which a SAME header
+    // was already generated; bug.
     return;
   }
 
-  // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX.
+  // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX samples at a time.
   for (int sample_count = 0; sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;) {
-    if (ctx->state_samples_remaining[ctx->gen_state] <= 0) {
-      // Move onto the next generation in the sequence
-      ctx->gen_state++;
-
-      if (ctx->gen_state == SAMETHING_CORE_GEN_STATE_NUM) {
-        // We're done generating.
-        return;
-      }
-    }
-
-    int num_samples = ctx->state_samples_remaining[ctx->gen_state];
+    int num_samples = ctx->seq_samples_remaining[ctx->seq_state];
 
     if (num_samples >= SAMETHING_CORE_SAMPLES_NUM_MAX) {
       num_samples = SAMETHING_CORE_SAMPLES_NUM_MAX;
     }
 
-    gen_table[ctx->gen_state](ctx, num_samples);
-    ctx->state_samples_remaining[ctx->gen_state] -= num_samples;
+    switch (ctx->seq_state) {
+      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST:
+      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND:
+      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD:
+        samething_core_afsk_gen(ctx, ctx->header_data, ctx->header_size,
+                                num_samples);
+        break;
 
+      case SAMETHING_CORE_GEN_STATE_SILENCE_FIRST:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_SECOND:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_THIRD:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH:
+      case SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH:
+        samething_core_silence_gen(ctx, num_samples);
+        break;
+
+      case SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL:
+        samething_core_attn_sig_gen(ctx, num_samples);
+        break;
+
+      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST:
+      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND:
+      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD:
+        samething_core_afsk_gen(ctx, SAMETHING_CORE_EOM_HEADER,
+                                SAMETHING_CORE_EOM_HEADER_SIZE, num_samples);
+        break;
+
+      default:
+        break;
+    }
+    ctx->seq_samples_remaining[ctx->seq_state] -= num_samples;
     sample_count += num_samples;
+
+    if (ctx->seq_samples_remaining[ctx->seq_state] == 0) {
+      ctx->seq_state++;
+
+      if (ctx->seq_state >= SAMETHING_CORE_GEN_STATE_NUM) {
+        // We're done generating.
+        return;
+      }
+    }
   }
 }

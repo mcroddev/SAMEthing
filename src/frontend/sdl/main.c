@@ -66,7 +66,7 @@ int main(void) {
   while (num_samples < ctx.samples_num_max) {
     samething_core_samples_gen(&ctx);
     num_samples += SAMETHING_CORE_SAMPLES_NUM_MAX;
-    SDL_QueueAudio(dev, ctx.data, sizeof(int16_t) * SAMETHING_CORE_SAMPLES_NUM_MAX);
+    SDL_QueueAudio(dev, ctx.sample_data, sizeof(int16_t) * SAMETHING_CORE_SAMPLES_NUM_MAX);
   }
   SDL_Delay(25000);
   return EXIT_SUCCESS;
