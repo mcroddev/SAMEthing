@@ -20,7 +20,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# Handle only the core for now.
+# Handle aspects which are common to both the core and any frontends.
+add_subdirectory(common)
+
+# Next, compile the core.
 add_subdirectory(core)
 
 # Now compile any frontends.

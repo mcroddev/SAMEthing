@@ -20,7 +20,30 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-add_subdirectory(common)
-add_subdirectory(qt)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+qt_standard_project_setup()
 
-add_subdirectory(sdl)
+set(CMAKE_AUTOUIC_SEARCH_PATHS views)
+
+set(SRCS main.cpp app.cpp)
+set(HDRS app.h)
+
+set(VIEWS_FILES views/main_window.ui)
+
+set(CONTROLLERS_SRCS controllers/main_window.cpp)
+set(CONTROLLERS_HDRS controllers/main_window.h)
+
+qt_add_executable(samething_qt ${SRCS}
+                               ${HDRS}
+                               ${CONTROLLERS_SRCS}
+                               ${CONTROLLERS_HDRS}
+                               ${VIEWS_FILES})
+
+target_link_libraries(samething_qt PRIVATE Qt6::Widgets
+                                           frontendaudio
+                                           core
+                                           samething-build-settings-cpp)
+
+set_target_properties(samething_qt PROPERTIES
+                      WIN32_EXECUTABLE ON
+                      MACOSX_BUNDLE ON)

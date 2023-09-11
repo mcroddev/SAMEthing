@@ -20,21 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SAMETHING_DEBUG_H
-#define SAMETHING_DEBUG_H
+#ifndef SAMETHING_COMPILER_H
+#define SAMETHING_COMPILER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+#pragma once
 
-#ifndef SAMETHING_TESTING
-#define SAMETHING_CORE_STATIC static
+#ifdef __clang__
+#define SAMETHING_UNREACHABLE __builtin_unreachable()
 #else
-#define SAMETHING_CORE_STATIC
-#endif // SAMETHING_TESTING
+#define SAMETHING_UNREACHABLE
+#endif // __clang__
 
-#ifdef __cplusplus
-}
-#endif // __cplusplus
-
-#endif // SAMETHING_DEBUG_H
+#endif // SAMETHING_COMPILER_H

@@ -81,7 +81,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "core/debug.h"
+#include "samething/compiler.h"
+#include "samething/debug.h"
 
 SAMETHING_CORE_STATIC void samething_core_field_add(uint8_t *const data,
                                                     size_t *data_size,
@@ -95,7 +96,7 @@ SAMETHING_CORE_STATIC void samething_core_field_add(uint8_t *const data,
 SAMETHING_CORE_STATIC void samething_core_afsk_gen(
     struct samething_core_gen_ctx *const ctx, const uint8_t *const data,
     const size_t data_size, size_t num_samples) {
-  int16_t *sample_data = ctx->sample_data;
+  size_t sample_cnt = 0;
 
   while (num_samples--) {
     const float freq = ((data[ctx->afsk.data_pos] >> ctx->afsk.bit_pos) & 1)
@@ -104,7 +105,9 @@ SAMETHING_CORE_STATIC void samething_core_afsk_gen(
 
     const float t = ctx->afsk.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-    *sample_data++ = sinf(M_PI * 2 * t * freq) * INT16_MAX;
+    const int16_t sample = sinf(M_PI * 2 * t * freq) * INT16_MAX;
+    ctx->sample_data[sample_cnt++] = sample;
+
     ctx->afsk.sample_num++;
 
     if (ctx->afsk.sample_num >= SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
@@ -133,18 +136,19 @@ void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
 
 SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
     struct samething_core_gen_ctx *const ctx, size_t num_samples) {
-  int16_t *sample_data = ctx->sample_data;
+  size_t sample_cnt = 0;
 
   while (num_samples--) {
     const float t =
         ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
     const float calc = M_PI * 2 * t;
 
-    *sample_data++ =
+    const int16_t sample =
         (sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t) +
          sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t)) *
         INT16_MAX;
 
+    ctx->sample_data[sample_cnt++] = sample;
     ctx->attn_sig_sample_num++;
   }
 }
@@ -152,48 +156,54 @@ SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
 void samething_core_ctx_config(
     struct samething_core_gen_ctx *const ctx,
     const struct samething_core_header *const header) {
-  uint8_t data[SAMETHING_CORE_HEADER_SIZE_MAX] = {SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  SAMETHING_CORE_PREAMBLE,
-                                                  'Z',
-                                                  'C',
-                                                  'Z',
-                                                  'C',
-                                                  '-',
-                                                  'O',
-                                                  'R',
-                                                  'G',
-                                                  '-',
-                                                  'E',
-                                                  'E',
-                                                  'E',
-                                                  '-',
-                                                  'P',
-                                                  'S',
-                                                  'S',
-                                                  'C',
-                                                  'C',
-                                                  'C'};
+  static const uint8_t SAMETHING_CORE_INITIAL_HEADER[] = {
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      'Z',
+      'C',
+      'Z',
+      'C',
+      '-',
+      'O',
+      'R',
+      'G',
+      '-',
+      'E',
+      'E',
+      'E',
+      '-',
+      'P',
+      'S',
+      'S',
+      'C',
+      'C',
+      'C'};
+
+  memcpy(&ctx->header_data, SAMETHING_CORE_INITIAL_HEADER,
+         sizeof(SAMETHING_CORE_INITIAL_HEADER));
 
   // We want to start populating the fields after the first dash.
-  size_t data_size = 21;
+  ctx->header_size = 21;
 
-  samething_core_field_add(data, &data_size, header->originator_code,
+  samething_core_field_add(ctx->header_data, &ctx->header_size,
+                           header->originator_code,
                            SAMETHING_CORE_ORIGINATOR_CODE_LEN_MAX);
-  samething_core_field_add(data, &data_size, header->event_code,
+  samething_core_field_add(ctx->header_data, &ctx->header_size,
+                           header->event_code,
                            SAMETHING_CORE_EVENT_CODE_LEN_MAX);
 
   for (size_t i = 0; i < SAMETHING_CORE_LOCATION_CODE_NUM_MAX; ++i) {
@@ -202,52 +212,52 @@ void samething_core_ctx_config(
                SAMETHING_CORE_LOCATION_CODE_LEN_MAX) == 0) {
       break;
     }
-    samething_core_field_add(data, &data_size, header->location_codes[i],
+    samething_core_field_add(ctx->header_data, &ctx->header_size,
+                             header->location_codes[i],
                              SAMETHING_CORE_LOCATION_CODE_LEN_MAX);
   }
-  data[data_size - 1] = '+';
+  ctx->header_data[ctx->header_size - 1] = '+';
 
-  samething_core_field_add(data, &data_size, header->valid_time_period,
+  samething_core_field_add(ctx->header_data, &ctx->header_size,
+                           header->valid_time_period,
                            SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
 
-  samething_core_field_add(data, &data_size, header->originator_time,
+  samething_core_field_add(ctx->header_data, &ctx->header_size,
+                           header->originator_time,
                            SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX);
 
-  samething_core_field_add(data, &data_size, header->id,
+  samething_core_field_add(ctx->header_data, &ctx->header_size, header->id,
                            SAMETHING_CORE_ID_LEN_MAX);
-
-  memcpy(ctx->header_data, data, data_size);
-  ctx->header_size = data_size;
 
   // clang-format off
 
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD] =
       SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
-      data_size;
+      ctx->header_size;
 
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_THIRD] =
   SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
   SAMETHING_CORE_EOM_HEADER_SIZE;
 
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIRST] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SECOND] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_THIRD] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH] =
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_FIRST] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_SECOND] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_THIRD] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_FOURTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_FIFTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_SIXTH] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_SEVENTH] =
   SAMETHING_CORE_SILENCE_DURATION * SAMETHING_CORE_SAMPLE_RATE;
 
-  ctx->seq_samples_remaining[SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL] =
+  ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_ATTENTION_SIGNAL] =
   header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
 
   // clang-format on
 
-  for (int i = 0; i < SAMETHING_CORE_GEN_STATE_NUM; ++i) {
+  for (size_t i = 0; i < SAMETHING_CORE_SEQ_STATE_NUM; ++i) {
     ctx->samples_num_max += ctx->seq_samples_remaining[i];
   }
 }
@@ -276,7 +286,7 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
           'N',
           'N'};
 
-  if (ctx->seq_state >= SAMETHING_CORE_GEN_STATE_NUM) {
+  if (ctx->seq_state >= SAMETHING_CORE_SEQ_STATE_NUM) {
     // Tried to generate a SAME header using a context for which a SAME header
     // was already generated; bug.
     return;
@@ -291,35 +301,36 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
     }
 
     switch (ctx->seq_state) {
-      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_FIRST:
-      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_SECOND:
-      case SAMETHING_CORE_GEN_STATE_AFSK_HEADER_THIRD:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD:
         samething_core_afsk_gen(ctx, ctx->header_data, ctx->header_size,
                                 num_samples);
         break;
 
-      case SAMETHING_CORE_GEN_STATE_SILENCE_FIRST:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_SECOND:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_THIRD:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_FOURTH:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_FIFTH:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_SIXTH:
-      case SAMETHING_CORE_GEN_STATE_SILENCE_SEVENTH:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_FIRST:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_SECOND:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_THIRD:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_FOURTH:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_FIFTH:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_SIXTH:
+      case SAMETHING_CORE_SEQ_STATE_SILENCE_SEVENTH:
         samething_core_silence_gen(ctx, num_samples);
         break;
 
-      case SAMETHING_CORE_GEN_STATE_ATTENTION_SIGNAL:
+      case SAMETHING_CORE_SEQ_STATE_ATTENTION_SIGNAL:
         samething_core_attn_sig_gen(ctx, num_samples);
         break;
 
-      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_FIRST:
-      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_SECOND:
-      case SAMETHING_CORE_GEN_STATE_AFSK_EOM_THIRD:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND:
+      case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_THIRD:
         samething_core_afsk_gen(ctx, SAMETHING_CORE_EOM_HEADER,
                                 SAMETHING_CORE_EOM_HEADER_SIZE, num_samples);
         break;
 
       default:
+        SAMETHING_UNREACHABLE;
         break;
     }
     ctx->seq_samples_remaining[ctx->seq_state] -= num_samples;
@@ -328,7 +339,7 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
     if (ctx->seq_samples_remaining[ctx->seq_state] == 0) {
       ctx->seq_state++;
 
-      if (ctx->seq_state >= SAMETHING_CORE_GEN_STATE_NUM) {
+      if (ctx->seq_state >= SAMETHING_CORE_SEQ_STATE_NUM) {
         // We're done generating.
         return;
       }

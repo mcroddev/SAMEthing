@@ -20,7 +20,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-add_subdirectory(common)
-add_subdirectory(qt)
+add_subdirectory(src)
 
-add_subdirectory(sdl)
+if (SAMETHING_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()

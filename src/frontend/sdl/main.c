@@ -35,7 +35,7 @@ int main(void) {
   audio_spec.freq = SAMETHING_CORE_SAMPLE_RATE;
   audio_spec.format = AUDIO_S16LSB;
   audio_spec.channels = 1;
-  audio_spec.samples = 1024;
+  audio_spec.samples = 4096;
 
   dev = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
 
@@ -46,27 +46,29 @@ int main(void) {
   printf("Using %s\n", SDL_GetAudioDeviceName(dev, 0));
 
   struct samething_core_header header = {
-      .location_codes = {"101010", SAMETHING_CORE_LOCATION_CODE_END_MARKER},
-      .originator_time = "39393933",
-      .valid_time_period = "1111",
-      .event_code = "EAN",
-      .originator_code = "RMT",
+      .location_codes = {"048487", "048023",
+                         SAMETHING_CORE_LOCATION_CODE_END_MARKER},
+      .originator_time = "1172112",
+      .valid_time_period = "1000",
+      .event_code = "TOR",
+      .originator_code = "WXR",
       .attn_sig_duration = 8,
-      .id = "ZID/HEAT "};
+      .id = "KWFB/FM "};
 
   struct samething_core_gen_ctx ctx;
   memset(&ctx, 0, sizeof(ctx));
 
   samething_core_ctx_config(&ctx, &header);
 
-  int num_samples = 0;
+  unsigned int num_samples = 0;
 
   SDL_PauseAudioDevice(dev, 0);
 
   while (num_samples < ctx.samples_num_max) {
     samething_core_samples_gen(&ctx);
     num_samples += SAMETHING_CORE_SAMPLES_NUM_MAX;
-    SDL_QueueAudio(dev, ctx.sample_data, sizeof(int16_t) * SAMETHING_CORE_SAMPLES_NUM_MAX);
+    SDL_QueueAudio(dev, ctx.sample_data,
+                   sizeof(int16_t) * SAMETHING_CORE_SAMPLES_NUM_MAX);
   }
   SDL_Delay(25000);
   return EXIT_SUCCESS;

@@ -20,7 +20,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-add_subdirectory(common)
-add_subdirectory(qt)
-
-add_subdirectory(sdl)
+add_library(samething-common INTERFACE)
+target_include_directories(samething-common INTERFACE public)

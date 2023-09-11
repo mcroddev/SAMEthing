@@ -22,7 +22,6 @@
 
 set(SRCS_PRIVATE private/core.c)
 set(HDRS_PUBLIC public/core/core.h
-                public/core/debug.h
 )
 
 # We compile the core as object files to allow for link-time optimization.
@@ -32,4 +31,4 @@ add_library(core OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC})
 # files.
 target_include_directories(core PUBLIC public)
 
-target_link_libraries(core PRIVATE samething-build-settings-c m)
+target_link_libraries(core PRIVATE samething-build-settings-c samething-common m)
