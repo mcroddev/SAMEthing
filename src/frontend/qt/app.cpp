@@ -181,15 +181,67 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
   const int event_code = main_window_controller_.EventCodeGet();
   std::memcpy(header.event_code, model_db_.event_code.entries[event_code].code,
               SAMETHING_DB_EVENT_CODE_LEN_MAX);
+
+  const int location_code_count =
+      main_window_controller_.LocationCodeCountGet();
+
+  int loc_code;
+  for (loc_code = 0; loc_code < location_code_count; ++loc_code) {
+    const LocationCodeData loc_data =
+        main_window_controller_.LocationCodeDataGet(loc_code);
+
+    size_t ctr = 0;
+    std::memcpy(
+        &header.location_codes[loc_code][ctr],
+        model_db_.county_subdivisions.entries[loc_data.county_subdivision_index]
+            .code,
+        SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX);
+    ctr += SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX;
+
+    std::memcpy(&header.location_codes[loc_code][ctr],
+                model_db_.state_county_map.states[loc_data.state_index].code,
+                SAMETHING_DB_STATE_CODE_LEN_MAX);
+    ctr += SAMETHING_DB_STATE_CODE_LEN_MAX;
+
+    std::memcpy(&header.location_codes[loc_code][ctr],
+                model_db_.state_county_map.states[loc_data.state_index]
+                    .counties[loc_data.county_index]
+                    .code,
+                SAMETHING_DB_COUNTY_CODE_LEN_MAX);
+  }
+  std::memcpy(&header.location_codes[loc_code],
+              SAMETHING_CORE_LOCATION_CODE_END_MARKER,
+              SAMETHING_CORE_LOCATION_CODE_LEN_MAX);
 }
 
 void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
+  const char* const name =
+      main_window_controller_.SelectedAudioDeviceNameGet().toUtf8().constData();
+
+  samething_audio_spec spec = {};
+  spec.format = SAMETHING_AUDIO_FORMAT_S16;
+  spec.sample_rate = SAMETHING_CORE_SAMPLE_RATE;
+  spec.samples = SAMETHING_CORE_SAMPLES_NUM_MAX;
+
+  samething_audio_device dev = {};
+
+  if (!samething_audio_open_device(name, &dev, &spec)) {
+    // Error!
+    return;
+  }
+
   samething_core_gen_ctx ctx = {};
   samething_core_ctx_config(&ctx, &header);
 
   unsigned int sample_cnt = 0;
   while (sample_cnt < ctx.samples_num_max) {
     samething_core_samples_gen(&ctx);
+
+    if (!samething_audio_buffer_play(&dev, ctx.sample_data,
+                                SAMETHING_CORE_SAMPLES_NUM_MAX)) {
+      // Error!
+      return;
+    }
     sample_cnt += SAMETHING_CORE_SAMPLES_NUM_MAX;
   }
 }

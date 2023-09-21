@@ -33,7 +33,13 @@ MainWindowController::MainWindowController() noexcept {
   ui_.attn_sig_duration_->setMinimum(SAMETHING_CORE_ATTN_SIG_MIN);
   ui_.attn_sig_duration_->setMaximum(SAMETHING_CORE_ATTN_SIG_MAX);
 
+  ui_.valid_time_period_->setMaximum(SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
+
   ui_.callsign_->setMaxLength(SAMETHING_CORE_ID_LEN_MAX);
+
+  // Set the default originator time to be the current time to avoid the default
+  // being 2000/1/1 0000.
+  ui_.org_time_->setDateTime(QDateTime::currentDateTime());
 
   SignalsConnectToSlots();
 }
@@ -60,6 +66,17 @@ void MainWindowController::LocationCodeAdd(const LocationCodeData& loc_code,
   QVariant var;
   var.setValue(loc_code);
   item->setData(0, Qt::UserRole, var);
+}
+
+[[nodiscard]] auto MainWindowController::LocationCodeDataGet(
+    const int loc_index) const noexcept -> LocationCodeData {
+  auto* item = ui_.location_codes_->topLevelItem(loc_index);
+  return qvariant_cast<LocationCodeData>(item->data(0, Qt::UserRole));
+}
+
+[[nodiscard]] auto MainWindowController::LocationCodeCountGet() const noexcept
+    -> int {
+  return ui_.location_codes_->topLevelItemCount();
 }
 
 void MainWindowController::OriginatorCodeAdd(const QString& name) noexcept {

@@ -72,6 +72,19 @@ class MainWindowController final : public QMainWindow {
                        const QString& county_subdivision, const QString& state,
                        const QString& county) noexcept;
 
+  /// Retrieves the number of location codes specified.
+  ///
+  /// @returns The number of location codes specified.
+  [[nodiscard]] auto LocationCodeCountGet() const noexcept -> int;
+
+  /// Retrieves the location database data stored in an item.
+  ///
+  /// @param loc_index The index pointing to a specific item.
+  ///
+  /// @returns The database data.
+  [[nodiscard]] auto LocationCodeDataGet(const int loc_index) const noexcept
+      -> LocationCodeData;
+
   /// Retrieves the value of the valid time period.
   ///
   /// @returns The value of the valid time period.
