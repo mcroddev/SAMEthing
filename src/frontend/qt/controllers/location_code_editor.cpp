@@ -20,26 +20,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <QApplication>
+#include "location_code_editor.h"
 
-#include "app.h"
+LocationCodeEditorDialogController::
+    LocationCodeEditorDialogController() noexcept
+    : ui_({}) {
+  ui_.setupUi(this);
+  SignalsConnectToSlots();
+}
 
-/// Program entry point.
-///
-/// @param argc The number of arguments passed to the program from the
-/// environment in which the program is run.
-/// @param argv The arguments passed to the program from the environment in
-/// which the program is run.
-/// @returns See documentation for QApplication::exec().
-auto main(int argc, char* argv[]) -> int {
-  const QApplication qt_instance(argc, argv);
+void LocationCodeEditorDialogController::SignalsConnectToSlots() noexcept {
+  connect(ui_.state_, &QComboBox::currentIndexChanged,
+          [this](const int index) { emit StateChanged(index); });
 
-  QApplication::setApplicationName("samething");
-  QApplication::setApplicationVersion("1.0.0");
+  connect(ui_.buttonBox, &QDialogButtonBox::accepted, [this]() {
+    emit NewEntry(ui_.county_subdivision_->currentIndex(),
+                  ui_.state_->currentIndex(), ui_.county_->currentIndex());
+  });
+}
 
-  QApplication::setOrganizationName("mcroddev");
-  QApplication::setOrganizationDomain("https://mcrod.dev");
+void LocationCodeEditorDialogController::CountySubdivisionAdd(
+    const QString &str) noexcept {
+  ui_.county_subdivision_->addItem(str);
+}
 
-  const SAMEthingApp samething_app;
-  return QApplication::exec();
+void LocationCodeEditorDialogController::StateAdd(const QString &str) noexcept {
+  ui_.state_->addItem(str);
+}
+
+void LocationCodeEditorDialogController::CountyAdd(
+    const QString &str) noexcept {
+  ui_.county_->addItem(str);
+}
+
+void LocationCodeEditorDialogController::CountyListClear() noexcept {
+  ui_.county_->clear();
 }

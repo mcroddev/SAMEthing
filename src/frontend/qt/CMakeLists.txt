@@ -28,10 +28,13 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS views)
 set(SRCS main.cpp app.cpp)
 set(HDRS app.h)
 
-set(VIEWS_FILES views/main_window.ui)
+set(VIEWS_FILES views/location_code_editor.ui views/main_window.ui)
 
-set(CONTROLLERS_SRCS controllers/main_window.cpp)
-set(CONTROLLERS_HDRS controllers/main_window.h)
+set(CONTROLLERS_SRCS controllers/location_code_editor.cpp
+                     controllers/main_window.cpp)
+
+set(CONTROLLERS_HDRS controllers/location_code_editor.h
+                     controllers/main_window.h)
 
 qt_add_executable(samething_qt ${SRCS}
                                ${HDRS}
@@ -41,6 +44,7 @@ qt_add_executable(samething_qt ${SRCS}
 
 target_link_libraries(samething_qt PRIVATE Qt6::Widgets
                                            frontendaudio
+                                           frontenddatabase
                                            core
                                            samething-build-settings-cpp)
 

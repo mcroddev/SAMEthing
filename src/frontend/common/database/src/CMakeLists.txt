@@ -19,3 +19,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
+set(SRCS_PRIVATE private/database.c private/ini.c)
+set(HDRS_PRIVATE private/ini.h)
+set(HDRS_PUBLIC public/frontend_database/database.h)
+
+add_library(frontenddatabase OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC} ${HDRS_PRIVATE})
+
+target_include_directories(frontenddatabase PUBLIC public)
+target_link_libraries(frontenddatabase PRIVATE samething-build-settings-c)

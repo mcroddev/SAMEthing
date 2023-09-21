@@ -29,6 +29,7 @@
 extern "C" {
 #endif  // __cplusplus
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /// The maximum number of playback audio devices that we support.
@@ -36,25 +37,6 @@ extern "C" {
 
 /// The maximum length an audio device name can be.
 #define SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX (128)
-
-/// Defines return codes for error
-enum samething_audio_return_codes {
-  /// No error.
-  SAMETHING_AUDIO_OK,
-
-  /// Error initializing the audio system.
-  SAMETHING_AUDIO_INIT_FAILED,
-
-  /// Error enumerating over output devices.
-  SAMETHING_AUDIO_ENUMERATION_FAILED,
-
-  /// No output devices found.
-  SAMETHING_AUDIO_DEVICES_NOT_FOUND,
-
-  SAMETHING_AUDIO_DEVICE_CANNOT_OPEN,
-
-  SAMETHING_AUDIO_DEVICE_QUEUE_ERROR
-};
 
 /// Defines an audio device.
 struct samething_audio_device {
@@ -78,37 +60,62 @@ struct samething_audio_spec {
   /// The number of samples per second.
   int sample_rate;
 
-  /// The size of the audio buffer in sample frames. This must be a power of 2.
-  uint16_t samples;
-
   /// The audio format we are sending to the audio device.
   enum samething_audio_format format;
+
+  /// The size of the audio buffer in sample frames. This must be a power of 2.
+  uint16_t samples;
 };
 
 /// Initializes the audio module.
 ///
-/// @returns SAMETHING_AUDIO_OK if successful, or any other code otherwise.
-/// Refer to samething_audio_return_codes for more details.
-enum samething_audio_return_codes samething_audio_init(void);
+/// @returns true if the module was successfully initialized, or false
+/// otherwise.
+bool samething_audio_init(void);
+
+/// Checks to see if the audio module is initialized.
+///
+/// @returns true if the module is initialized, or false otherwise.
+bool samething_audio_is_init(void);
 
 /// Shuts down the audio module.
 void samething_audio_shutdown(void);
 
+/// Retrieves the error string corresponding to the last failed operation.
+///
+/// @returns The error string corresponding to the last failed operation.
 const char *samething_audio_error_get(void);
 
 /// Enumerates over the output devices.
-size_t samething_audio_devices_get(
+///
+/// @param devices The 2D array in which to store the names of the output
+/// devices that were found.
+/// @param num_devices The number of devices that were found.
+/// @returns true if this operation was successful, or false otherwise.
+bool samething_audio_devices_get(
     char devices[SAMETHING_AUDIO_DEVICES_NUM_MAX]
                 [SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX],
-    enum samething_audio_return_codes *const code);
+    size_t *num_devices);
 
-enum samething_audio_return_codes samething_audio_open_device(
+/// Opens the specified device.
+///
+/// @param name The actual name of the audio device.
+/// @param dev The audio device structure to populate.
+/// @param audio_spec Information about the audio we plan to feed to the device
+/// @returns true if this operation was successful, or false otherwise.
+bool samething_audio_open_device(
     const char *const name, struct samething_audio_device *const dev,
     const struct samething_audio_spec *const audio_spec);
 
-enum samething_audio_return_codes samething_audio_buffer_play(
-    const struct samething_audio_device *const dev, const int16_t *const buffer,
-    const size_t buffer_size);
+/// Sends audio data to the device.
+///
+/// @param dev The audio device to feed data to.
+/// @param buffer The audio data to feed.
+/// @param buffer_size The size of the audio data.
+/// @returns true if this operation was successful, or false otherwise.
+bool samething_audio_buffer_play(const struct samething_audio_device *const dev,
+                                 const int16_t *const buffer,
+                                 const size_t buffer_size);
 
 #ifdef __cplusplus
 }

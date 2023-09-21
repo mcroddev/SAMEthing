@@ -156,6 +156,8 @@ SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
 void samething_core_ctx_config(
     struct samething_core_gen_ctx *const ctx,
     const struct samething_core_header *const header) {
+  memset(ctx, 0, sizeof(*ctx));
+
   static const uint8_t SAMETHING_CORE_INITIAL_HEADER[] = {
       SAMETHING_CORE_PREAMBLE,
       SAMETHING_CORE_PREAMBLE,
@@ -293,8 +295,9 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
   }
 
   // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX samples at a time.
-  for (int sample_count = 0; sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;) {
-    int num_samples = ctx->seq_samples_remaining[ctx->seq_state];
+  for (unsigned int sample_count = 0;
+       sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;) {
+    unsigned int num_samples = ctx->seq_samples_remaining[ctx->seq_state];
 
     if (num_samples >= SAMETHING_CORE_SAMPLES_NUM_MAX) {
       num_samples = SAMETHING_CORE_SAMPLES_NUM_MAX;

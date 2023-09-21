@@ -24,11 +24,8 @@
 
 #include "frontend_audio/audio.h"
 
-enum samething_audio_return_codes samething_audio_init(void) {
-  if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-    return SAMETHING_AUDIO_INIT_FAILED;
-  }
-  return SAMETHING_AUDIO_OK;
+bool samething_audio_init(void) {
+  return SDL_InitSubSystem(SDL_INIT_AUDIO) >= 0;
 }
 
 void samething_audio_shutdown(void) {
@@ -39,12 +36,17 @@ void samething_audio_shutdown(void) {
   SDL_Quit();
 }
 
+/// Checks to see if the audio module is initialized.
+bool samething_audio_is_init(void) {
+  return SDL_WasInit(SDL_INIT_AUDIO);
+}
+
 const char *samething_audio_error_get(void) { return SDL_GetError(); }
 
-size_t samething_audio_devices_get(
+bool samething_audio_devices_get(
     char devices[SAMETHING_AUDIO_DEVICES_NUM_MAX]
                 [SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX],
-    enum samething_audio_return_codes *const code) {
+    size_t *num_devices) {
   const int audio_device_count = SDL_GetNumAudioDevices(0);
 
   if (audio_device_count < 0) {
@@ -56,8 +58,8 @@ size_t samething_audio_devices_get(
     //
     // XXX: This isn't the case here, so we go ahead and say that we didn't find
     // any audio devices.
-    *code = SAMETHING_AUDIO_DEVICES_NOT_FOUND;
-    return 0;
+    *num_devices = 0;
+    return false;
   }
 
   for (int audio_device_id = 0; audio_device_id < audio_device_count;
@@ -65,31 +67,26 @@ size_t samething_audio_devices_get(
     const char *device_name = SDL_GetAudioDeviceName(audio_device_id, 0);
 
     if (device_name == NULL) {
-      *code = SAMETHING_AUDIO_ENUMERATION_FAILED;
-      return 0;
+      *num_devices = 0;
+      return false;
     }
 
     strncpy(devices[audio_device_id], device_name,
             SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX);
   }
-  *code = SAMETHING_AUDIO_OK;
-  return audio_device_count;
+  *num_devices = audio_device_count;
+  return true;
 }
 
-enum samething_audio_return_codes samething_audio_buffer_play(
-    const struct samething_audio_device *const dev, const int16_t *const buffer,
-    const size_t buffer_size) {
+bool samething_audio_buffer_play(const struct samething_audio_device *const dev,
+                                 const int16_t *const buffer,
+                                 const size_t buffer_size) {
   const SDL_AudioDeviceID id = (SDL_AudioDeviceID)(uintptr_t)dev->id;
 
-  const int res = SDL_QueueAudio(id, buffer, sizeof(int16_t) * buffer_size);
-
-  if (res < 0) {
-    return SAMETHING_AUDIO_DEVICE_QUEUE_ERROR;
-  }
-  return SAMETHING_AUDIO_OK;
+  return SDL_QueueAudio(id, buffer, sizeof(int16_t) * buffer_size) >= 0;
 }
 
-enum samething_audio_return_codes samething_audio_open_device(
+bool samething_audio_open_device(
     const char *const name, struct samething_audio_device *const dev,
     const struct samething_audio_spec *const audio_spec) {
   SDL_AudioSpec spec;
@@ -113,14 +110,13 @@ enum samething_audio_return_codes samething_audio_open_device(
       SDL_OpenAudioDevice(name, 0, &spec, NULL, 0);
 
   if (audio_device == 0) {
-    return SAMETHING_AUDIO_DEVICE_CANNOT_OPEN;
+    return false;
   }
 
   dev->id = (void *)(uintptr_t)audio_device;
   strncpy(dev->name, name, SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX);
 
-  /// Enable the audio device.
+  // Enable the audio device.
   SDL_PauseAudioDevice(audio_device, 0);
-
-  return SAMETHING_AUDIO_OK;
+  return true;
 }

@@ -27,8 +27,14 @@
 
 #include <QObject>
 
+#include "controllers/location_code_editor.h"
 #include "controllers/main_window.h"
+#include "core/core.h"
+#include "frontend_audio/audio.h"
+#include "frontend_database/database.h"
 
+/// Defines the main application class, which is essentially interconnectivity
+/// between models, views, and controllers.
 class SAMEthingApp final : public QObject {
   Q_OBJECT
 
@@ -36,10 +42,32 @@ class SAMEthingApp final : public QObject {
   SAMEthingApp() noexcept;
 
  private:
+  /// Populates various fields of the main window.
+  void MainWindowPopulateFields() noexcept;
+
+  /// Populates various fields of the location code editor.
+  void LocationCodeEditorPopulateFields() noexcept;
+
+  /// Initializes the audio module.
+  ///
+  /// If initialization fails, the generation of the SAME header to a WAV file
+  /// is still possible.
   void AudioInitialize() noexcept;
+
+  /// Initializes the database module.
+  ///
+  /// If initialization fails, the program will fatally terminate.
   void DatabaseLoad() noexcept;
 
+  void SignalsConnectToSlots() noexcept;
+
+  void SAMEHeaderPopulate(samething_core_header& header) noexcept;
+  void SAMEHeaderPlay(samething_core_header& header) noexcept;
+
   MainWindowController main_window_controller_;
+  LocationCodeEditorDialogController location_code_editor_;
+
+  samething_db model_db_;
 };
 
 #endif  // SAMETHING_FRONTEND_QT_APP_H

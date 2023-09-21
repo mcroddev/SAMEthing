@@ -29,8 +29,6 @@ set(HDRS_PUBLIC public/frontend_audio/audio.h)
 
 add_library(frontendaudio OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC})
 
-target_compile_definitions(frontendaudio PRIVATE -DSAMETHING_AUDIO_BACKEND_SDL_SUPPORT)
-
 target_include_directories(frontendaudio PUBLIC public)
 target_link_libraries(frontendaudio PRIVATE samething-build-settings-c
                                             samething-common SDL2::SDL2)

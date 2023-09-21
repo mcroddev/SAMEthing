@@ -224,9 +224,6 @@ struct samething_core_gen_ctx {
   /// The actual size of the header to care about.
   size_t header_size;
 
-  /// The current sample we're writing.
-  size_t sample_cnt;
-
   /// The maximum number of samples we should generate.
   unsigned int samples_num_max;
 
