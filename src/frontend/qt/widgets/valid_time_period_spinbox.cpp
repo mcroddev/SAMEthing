@@ -20,41 +20,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SAMETHING_DEBUG_H
-#define SAMETHING_DEBUG_H
+#include "valid_time_period_spinbox.h"
 
-#pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
-
-#ifndef SAMETHING_TESTING
-#define SAMETHING_STATIC static
-#else
-#define SAMETHING_STATIC
-#endif  // SAMETHING_TESTING
-
-#ifndef NDEBUG
-#define SAMETHING_ASSERT(expr)                               \
-  do {                                                       \
-    if (!(expr)) {                                           \
-      samething_dbg_assert_failed(#expr, __FILE__, __LINE__, \
-                                  samething_dbg_userdata_);  \
-    }                                                        \
-  } while (0)
-
-void samething_dbg_assert_failed(const char *const expr, const char *const file,
-                                 const int line_no, void *userdata);
-
-extern void *samething_dbg_userdata_;
-
-#else
-#define SAMETHING_ASSERT(x)
-#endif  // NDEBUG
-
-#ifdef __cplusplus
+ValidTimePeriodWidget::ValidTimePeriodWidget(QWidget* parent) noexcept
+    : QTimeEdit(parent) {
+  setMinimumTime(QTime(0, 15, 0));
 }
-#endif  // __cplusplus
 
-#endif  // SAMETHING_DEBUG_H
+void ValidTimePeriodWidget::stepBy(int steps) {
+  QTime current_time = time();
+
+  int segments = 0;
+
+  if (current_time.hour() >= 1) {
+    segments = 30;
+  } else {
+    segments = 15;
+  }
+
+  if (currentSection() == QTimeEdit::MinuteSection) {
+    if (steps >= 0) {
+      current_time = current_time.addSecs(60 * segments);
+    } else {
+      current_time = current_time.addSecs(60 * -segments);
+    }
+    setTime(current_time);
+  } else if (currentSection() == QTimeEdit::HourSection) {
+    if (steps >= 0) {
+      current_time = current_time.addSecs(3600);
+
+      if (current_time.hour() == 1) {
+        current_time = current_time.addSecs(60 * -current_time.minute());
+      }
+    } else {
+      current_time = current_time.addSecs(-3600);
+
+      if (current_time.hour() == 0) {
+        // Will automatically clip back to the minimum time.
+        current_time = current_time.addSecs(60 * -current_time.minute());
+      }
+    }
+    setTime(current_time);
+  }
+}

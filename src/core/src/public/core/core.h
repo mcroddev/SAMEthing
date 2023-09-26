@@ -33,9 +33,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-/// How many times should we send a burst?
-#define SAMETHING_CORE_BURSTS_NUM_MAX (3)
-
 /// The number of ASCII alphabetical characters which compose the originator
 /// code.
 #define SAMETHING_CORE_ORIGINATOR_CODE_LEN_MAX (3)
@@ -223,9 +220,6 @@ struct samething_core_gen_ctx {
 
   /// The actual size of the header to care about.
   size_t header_size;
-
-  /// The maximum number of samples we should generate.
-  unsigned int samples_num_max;
 
   /// The current sequence of the generation.
   enum samething_core_seq_state seq_state;

@@ -27,8 +27,9 @@
 
 #ifdef __clang__
 #define SAMETHING_UNREACHABLE __builtin_unreachable()
+#define SAMETHING_ALWAYS_INLINE inline __attribute__((always_inline))
 #else
 #define SAMETHING_UNREACHABLE
-#endif // __clang__
+#endif  // __clang__
 
-#endif // SAMETHING_COMPILER_H
+#endif  // SAMETHING_COMPILER_H

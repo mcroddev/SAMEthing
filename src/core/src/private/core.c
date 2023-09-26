@@ -84,18 +84,27 @@
 #include "samething/compiler.h"
 #include "samething/debug.h"
 
-SAMETHING_CORE_STATIC void samething_core_field_add(uint8_t *const data,
-                                                    size_t *data_size,
-                                                    const char *const field,
-                                                    const size_t field_len) {
+SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_field_add(
+    uint8_t *const data, size_t *data_size, const char *const field,
+    const size_t field_len) {
+  SAMETHING_ASSERT(data != NULL);
+  SAMETHING_ASSERT(data_size != NULL);
+  SAMETHING_ASSERT(field != NULL);
+  SAMETHING_ASSERT(field_len > 0);
+
   memcpy(&data[*data_size], field, field_len);
   *data_size += field_len;
   data[(*data_size)++] = '-';
 }
 
-SAMETHING_CORE_STATIC void samething_core_afsk_gen(
+SAMETHING_STATIC void samething_core_afsk_gen(
     struct samething_core_gen_ctx *const ctx, const uint8_t *const data,
     const size_t data_size, size_t num_samples) {
+  SAMETHING_ASSERT(ctx != NULL);
+  SAMETHING_ASSERT(data != NULL);
+  SAMETHING_ASSERT(data_size > 0);
+  SAMETHING_ASSERT(num_samples > 0);
+
   size_t sample_cnt = 0;
 
   while (num_samples--) {
@@ -126,16 +135,22 @@ SAMETHING_CORE_STATIC void samething_core_afsk_gen(
   }
 }
 
-SAMETHING_CORE_STATIC
+SAMETHING_STATIC
 void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
                                 size_t num_samples) {
+  SAMETHING_ASSERT(ctx != NULL);
+  SAMETHING_ASSERT(num_samples > 0);
+
   while (num_samples--) {
     ctx->sample_data[num_samples] = 0;
   }
 }
 
-SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
+SAMETHING_STATIC void samething_core_attn_sig_gen(
     struct samething_core_gen_ctx *const ctx, size_t num_samples) {
+  SAMETHING_ASSERT(ctx != NULL);
+  SAMETHING_ASSERT(num_samples > 0);
+
   size_t sample_cnt = 0;
 
   while (num_samples--) {
@@ -156,7 +171,8 @@ SAMETHING_CORE_STATIC void samething_core_attn_sig_gen(
 void samething_core_ctx_config(
     struct samething_core_gen_ctx *const ctx,
     const struct samething_core_header *const header) {
-  memset(ctx, 0, sizeof(*ctx));
+  SAMETHING_ASSERT(ctx != NULL);
+  SAMETHING_ASSERT(header != NULL);
 
   static const uint8_t SAMETHING_CORE_INITIAL_HEADER[] = {
       SAMETHING_CORE_PREAMBLE,
@@ -258,13 +274,11 @@ void samething_core_ctx_config(
   header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
 
   // clang-format on
-
-  for (size_t i = 0; i < SAMETHING_CORE_SEQ_STATE_NUM; ++i) {
-    ctx->samples_num_max += ctx->seq_samples_remaining[i];
-  }
 }
 
 void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
+  SAMETHING_ASSERT(ctx != NULL);
+
   static const uint8_t
       SAMETHING_CORE_EOM_HEADER[SAMETHING_CORE_EOM_HEADER_SIZE] = {
           SAMETHING_CORE_PREAMBLE,
@@ -288,11 +302,9 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
           'N',
           'N'};
 
-  if (ctx->seq_state >= SAMETHING_CORE_SEQ_STATE_NUM) {
-    // Tried to generate a SAME header using a context for which a SAME header
-    // was already generated; bug.
-    return;
-  }
+  // Tried to generate a SAME header using a context for which a SAME header was
+  // already generated; bug.
+  SAMETHING_ASSERT(ctx->seq_state < SAMETHING_CORE_SEQ_STATE_NUM);
 
   // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX samples at a time.
   for (unsigned int sample_count = 0;

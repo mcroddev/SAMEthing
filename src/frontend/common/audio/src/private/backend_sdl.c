@@ -23,23 +23,16 @@
 #include <SDL2/SDL.h>
 
 #include "frontend_audio/audio.h"
+#include "samething/compiler.h"
+#include "samething/debug.h"
 
 bool samething_audio_init(void) {
   return SDL_InitSubSystem(SDL_INIT_AUDIO) >= 0;
 }
 
-void samething_audio_shutdown(void) {
-  if (!SDL_WasInit(SDL_INIT_AUDIO)) {
-    // Shouldn't be called if audio wasn't initialized to begin with...
-    return;
-  }
-  SDL_Quit();
-}
+void samething_audio_shutdown(void) { SDL_Quit(); }
 
-/// Checks to see if the audio module is initialized.
-bool samething_audio_is_init(void) {
-  return SDL_WasInit(SDL_INIT_AUDIO);
-}
+bool samething_audio_is_init(void) { return SDL_WasInit(SDL_INIT_AUDIO); }
 
 const char *samething_audio_error_get(void) { return SDL_GetError(); }
 
@@ -47,6 +40,9 @@ bool samething_audio_devices_get(
     char devices[SAMETHING_AUDIO_DEVICES_NUM_MAX]
                 [SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX],
     size_t *num_devices) {
+  SAMETHING_ASSERT(devices != NULL);
+  SAMETHING_ASSERT(num_devices != NULL);
+
   const int audio_device_count = SDL_GetNumAudioDevices(0);
 
   if (audio_device_count < 0) {
@@ -102,7 +98,9 @@ bool samething_audio_open_device(
       break;
 
     default:
-      // assert
+      // Unhandled audio format.
+      SAMETHING_ASSERT(false);
+      SAMETHING_UNREACHABLE;
       break;
   }
 

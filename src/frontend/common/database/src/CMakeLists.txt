@@ -27,4 +27,4 @@ set(HDRS_PUBLIC public/frontend_database/database.h)
 add_library(frontenddatabase OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC} ${HDRS_PRIVATE})
 
 target_include_directories(frontenddatabase PUBLIC public)
-target_link_libraries(frontenddatabase PRIVATE samething-build-settings-c)
+target_link_libraries(frontenddatabase PRIVATE samething-build-settings-c samething-common)

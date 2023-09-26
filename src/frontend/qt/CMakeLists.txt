@@ -36,11 +36,18 @@ set(CONTROLLERS_SRCS controllers/location_code_editor.cpp
 set(CONTROLLERS_HDRS controllers/location_code_editor.h
                      controllers/main_window.h)
 
+set(WIDGETS_SRCS widgets/valid_time_period_spinbox.cpp)
+set(WIDGETS_HDRS widgets/valid_time_period_spinbox.h)
+
 qt_add_executable(samething_qt ${SRCS}
                                ${HDRS}
                                ${CONTROLLERS_SRCS}
                                ${CONTROLLERS_HDRS}
-                               ${VIEWS_FILES})
+                               ${VIEWS_FILES}
+                               ${WIDGETS_SRCS}
+                               ${WIDGETS_HDRS})
+
+target_include_directories(samething_qt PRIVATE .)
 
 target_link_libraries(samething_qt PRIVATE Qt6::Widgets
                                            frontendaudio

@@ -33,49 +33,49 @@ extern "C" {
 #include <stddef.h>
 
 /// The maximum number of originator codes which can be stored.
-#define SAMETHING_DB_ORG_CODE_NUM_MAX 4
+#define SAMETHING_DB_ORG_CODE_NUM_MAX (4)
 
 /// The maximum length of the actual originator code.
-#define SAMETHING_DB_ORG_CODE_LEN_MAX 3
+#define SAMETHING_DB_ORG_CODE_LEN_MAX (3)
 
 /// The maximum length of the originator code's description.
-#define SAMETHING_DB_ORG_CODE_DESC_LEN_MAX 128
+#define SAMETHING_DB_ORG_CODE_DESC_LEN_MAX (128)
 
 /// The maximum number of event codes which can be stored.
-#define SAMETHING_DB_EVENT_CODE_NUM_MAX 60
+#define SAMETHING_DB_EVENT_CODE_NUM_MAX (60)
 
 /// The maximum length of the actual event code.
-#define SAMETHING_DB_EVENT_CODE_LEN_MAX 3
+#define SAMETHING_DB_EVENT_CODE_LEN_MAX (3)
 
 /// The maximum length of the event code's description.
-#define SAMETHING_DB_EVENT_CODE_DESC_LEN_MAX 128
+#define SAMETHING_DB_EVENT_CODE_DESC_LEN_MAX (128)
 
 /// The maximum number of county subdivisions which can be stored.
-#define SAMETHING_DB_COUNTY_SUBDIVISION_NUM_MAX 10
+#define SAMETHING_DB_COUNTY_SUBDIVISION_NUM_MAX (10)
 
 /// The maximum length of the actual county subdivision.
-#define SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX 1
+#define SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX (1)
 
 /// The maximum length of the county subdivision's description.
-#define SAMETHING_DB_COUNTY_SUBDIVISION_DESC_LEN_MAX 128
+#define SAMETHING_DB_COUNTY_SUBDIVISION_DESC_LEN_MAX (128)
 
 /// The maximum number of states which can be stored.
-#define SAMETHING_DB_STATE_NUM_MAX 50
+#define SAMETHING_DB_STATE_NUM_MAX (50)
 
 /// The maximum length of the actual state code.
-#define SAMETHING_DB_STATE_CODE_LEN_MAX 2
+#define SAMETHING_DB_STATE_CODE_LEN_MAX (2)
 
 /// The maximum length of the state's name.
-#define SAMETHING_DB_STATE_NAME_LEN_MAX 20
+#define SAMETHING_DB_STATE_NAME_LEN_MAX (20)
 
 /// The maximum length of the actual county code.
-#define SAMETHING_DB_COUNTY_CODE_LEN_MAX 3
+#define SAMETHING_DB_COUNTY_CODE_LEN_MAX (3)
 
 /// The maximum length of the county.
-#define SAMETHING_DB_COUNTY_NAME_LEN_MAX 20
+#define SAMETHING_DB_COUNTY_NAME_LEN_MAX (20)
 
 /// The maximum number of counties supported per state.
-#define SAMETHING_DB_COUNTY_NUM_MAX 20
+#define SAMETHING_DB_COUNTY_NUM_MAX (20)
 
 struct samething_db {
   struct {
@@ -122,6 +122,39 @@ struct samething_db {
 };
 
 typedef char *(*samething_db_line_read_cb)(char *str, int num, void *stream);
+
+#ifdef SAMETHING_TESTING
+/// Checks to see if a string ends with the specified string.
+///
+/// @param str The string to inspect.
+/// @param suffix The string to check.
+/// @returns true if the str ends with suffix, or false otherwise.
+bool samething_db_str_ends_with(const char *const str,
+                                const char *const suffix);
+
+void samething_db_org_code_add(struct samething_db *const db,
+                               const char *const code, const char *const desc);
+
+void samething_db_county_subdivision_add(struct samething_db *const db,
+                                         const char *const code,
+                                         const char *const desc);
+
+void samething_db_event_code_add(struct samething_db *const db,
+                                 const char *const code,
+                                 const char *const desc);
+
+void samething_db_state_code_add(struct samething_db *const db,
+                                 const char *const code,
+                                 const char *const name);
+
+void samething_db_state_county_add(struct samething_db *const db,
+                                   const size_t state, const char *const code,
+                                   const char *const name);
+
+int samething_db_ini_parse_event(void *user, const char *section,
+                                 const char *name, const char *value);
+
+#endif  // SAMETHING_TESTING
 
 bool samething_db_read(struct samething_db *const db,
                        samething_db_line_read_cb read_cb, void *stream);

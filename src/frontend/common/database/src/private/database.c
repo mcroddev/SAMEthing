@@ -25,60 +25,94 @@
 #include <string.h>
 
 #include "ini.h"
+#include "samething/debug.h"
 
-static bool str_ends_with(const char *str, const char *suffix) {
-  const size_t lenstr = strlen(str);
-  const size_t lensuffix = strlen(suffix);
+SAMETHING_STATIC bool samething_db_str_ends_with(const char *const str,
+                                                 const char *const suffix) {
+  const size_t len_str = strlen(str);
+  const size_t len_suffix = strlen(suffix);
 
-  return memcmp(str + (lenstr - lensuffix), suffix, lensuffix) == 0;
+  return memcmp(&str[(len_str - len_suffix)], suffix, len_suffix) == 0;
 }
 
-static int ini_parse_event(void *user, const char *section, const char *name,
-                           const char *value) {
+SAMETHING_STATIC void samething_db_org_code_add(struct samething_db *const db,
+                                                const char *const code,
+                                                const char *const desc) {
+  strncpy(db->org_code.entries[db->org_code.num_entries].code, code,
+          SAMETHING_DB_ORG_CODE_LEN_MAX);
+  strncpy(db->org_code.entries[db->org_code.num_entries].desc, desc,
+          SAMETHING_DB_ORG_CODE_DESC_LEN_MAX);
+  db->org_code.num_entries++;
+}
+
+SAMETHING_STATIC void samething_db_county_subdivision_add(
+    struct samething_db *const db, const char *const code,
+    const char *const desc) {
+  strncpy(
+      db->county_subdivisions.entries[db->county_subdivisions.num_entries].code,
+      code, SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX);
+  strncpy(
+      db->county_subdivisions.entries[db->county_subdivisions.num_entries].desc,
+      desc, SAMETHING_DB_COUNTY_SUBDIVISION_DESC_LEN_MAX);
+  db->county_subdivisions.num_entries++;
+}
+
+SAMETHING_STATIC void samething_db_event_code_add(struct samething_db *const db,
+                                                  const char *const code,
+                                                  const char *const desc) {
+  strncpy(db->event_code.entries[db->event_code.num_entries].code, code,
+          SAMETHING_DB_EVENT_CODE_LEN_MAX);
+  strncpy(db->event_code.entries[db->event_code.num_entries].desc, desc,
+          SAMETHING_DB_EVENT_CODE_DESC_LEN_MAX);
+  db->event_code.num_entries++;
+}
+
+SAMETHING_STATIC void samething_db_state_code_add(struct samething_db *const db,
+                                                  const char *const code,
+                                                  const char *const name) {
+  strncpy(db->state_county_map.states[db->state_county_map.num_states].code,
+          code, SAMETHING_DB_STATE_CODE_LEN_MAX);
+  strncpy(db->state_county_map.states[db->state_county_map.num_states].name,
+          name, SAMETHING_DB_STATE_NAME_LEN_MAX);
+  db->state_county_map.num_states++;
+}
+
+SAMETHING_STATIC void samething_db_state_county_add(
+    struct samething_db *const db, const size_t state, const char *const code,
+    const char *const name) {
+  strncpy(db->state_county_map.states[state]
+              .counties[db->state_county_map.states[state].num_counties]
+              .code,
+          code, SAMETHING_DB_COUNTY_CODE_LEN_MAX);
+  strncpy(db->state_county_map.states[state]
+              .counties[db->state_county_map.states[state].num_counties]
+              .name,
+          name, SAMETHING_DB_COUNTY_NAME_LEN_MAX);
+  db->state_county_map.states[state].num_counties++;
+}
+
+SAMETHING_STATIC int samething_db_ini_parse_event(void *user,
+                                                  const char *section,
+                                                  const char *name,
+                                                  const char *value) {
   struct samething_db *const db = (struct samething_db *const)user;
 
   if (strcmp(section, "originator_codes") == 0) {
-    strncpy(db->org_code.entries[db->org_code.num_entries].code, name,
-            SAMETHING_DB_ORG_CODE_LEN_MAX);
-    strncpy(db->org_code.entries[db->org_code.num_entries].desc, value,
-            SAMETHING_DB_ORG_CODE_DESC_LEN_MAX);
-    db->org_code.num_entries++;
+    samething_db_org_code_add(db, name, value);
   } else if (strcmp(section, "event_codes") == 0) {
-    strncpy(db->event_code.entries[db->event_code.num_entries].code, name,
-            SAMETHING_DB_EVENT_CODE_LEN_MAX);
-    strncpy(db->event_code.entries[db->event_code.num_entries].desc, value,
-            SAMETHING_DB_EVENT_CODE_DESC_LEN_MAX);
-    db->event_code.num_entries++;
+    samething_db_event_code_add(db, name, value);
   } else if (strcmp(section, "county_subdivisions") == 0) {
-    strncpy(db->county_subdivisions.entries[db->county_subdivisions.num_entries]
-                .code,
-            name, SAMETHING_DB_COUNTY_SUBDIVISION_LEN_MAX);
-    strncpy(db->county_subdivisions.entries[db->county_subdivisions.num_entries]
-                .desc,
-            value, SAMETHING_DB_COUNTY_SUBDIVISION_DESC_LEN_MAX);
-    db->county_subdivisions.num_entries++;
+    samething_db_county_subdivision_add(db, name, value);
   } else if (strcmp(section, "state_codes") == 0) {
-    strncpy(db->state_county_map.states[db->state_county_map.num_states].code,
-            name, SAMETHING_DB_STATE_CODE_LEN_MAX);
-    strncpy(db->state_county_map.states[db->state_county_map.num_states].name,
-            value, SAMETHING_DB_STATE_NAME_LEN_MAX);
-    db->state_county_map.num_states++;
-  } else if (str_ends_with(section, "_county_codes")) {
+    samething_db_state_code_add(db, name, value);
+  } else if (samething_db_str_ends_with(section, "_county_codes")) {
     char state_code[SAMETHING_DB_STATE_CODE_LEN_MAX];
     memcpy(state_code, section, SAMETHING_DB_STATE_CODE_LEN_MAX);
 
     for (size_t state = 0; state < db->state_county_map.num_states; ++state) {
       if (memcmp(state_code, db->state_county_map.states[state].code,
                  SAMETHING_DB_STATE_CODE_LEN_MAX) == 0) {
-        strncpy(db->state_county_map.states[state]
-                    .counties[db->state_county_map.states[state].num_counties]
-                    .code,
-                name, SAMETHING_DB_COUNTY_CODE_LEN_MAX);
-        strncpy(db->state_county_map.states[state]
-                    .counties[db->state_county_map.states[state].num_counties]
-                    .name,
-                value, SAMETHING_DB_COUNTY_NAME_LEN_MAX);
-        db->state_county_map.states[state].num_counties++;
+        samething_db_state_county_add(db, state, name, value);
       }
     }
   } else {
@@ -89,6 +123,6 @@ static int ini_parse_event(void *user, const char *section, const char *name,
 
 bool samething_db_read(struct samething_db *const db,
                        samething_db_line_read_cb read_cb, void *stream) {
-  return ini_parse_stream((ini_reader)read_cb, stream, &ini_parse_event, db) ==
-         0;
+  return ini_parse_stream((ini_reader)read_cb, stream,
+                          &samething_db_ini_parse_event, db) == 0;
 }

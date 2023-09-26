@@ -20,41 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef SAMETHING_DEBUG_H
-#define SAMETHING_DEBUG_H
+#ifndef SAMETHING_QT_FRONTEND_VALID_TIME_PERIOD_SPINBOX_WIDGET_H
+#define SAMETHING_QT_FRONTEND_VALID_TIME_PERIOD_SPINBOX_WIDGET_H
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // __cplusplus
+#include <QTimeEdit>
 
-#ifndef SAMETHING_TESTING
-#define SAMETHING_STATIC static
-#else
-#define SAMETHING_STATIC
-#endif  // SAMETHING_TESTING
+class ValidTimePeriodWidget : public QTimeEdit {
+  Q_OBJECT
 
-#ifndef NDEBUG
-#define SAMETHING_ASSERT(expr)                               \
-  do {                                                       \
-    if (!(expr)) {                                           \
-      samething_dbg_assert_failed(#expr, __FILE__, __LINE__, \
-                                  samething_dbg_userdata_);  \
-    }                                                        \
-  } while (0)
+ public:
+  explicit ValidTimePeriodWidget(QWidget *parent = nullptr) noexcept;
+  void stepBy(int steps) override;
+};
 
-void samething_dbg_assert_failed(const char *const expr, const char *const file,
-                                 const int line_no, void *userdata);
-
-extern void *samething_dbg_userdata_;
-
-#else
-#define SAMETHING_ASSERT(x)
-#endif  // NDEBUG
-
-#ifdef __cplusplus
-}
-#endif  // __cplusplus
-
-#endif  // SAMETHING_DEBUG_H
+#endif  // SAMETHING_QT_FRONTEND_VALID_TIME_PERIOD_SPINBOX_WIDGET_H

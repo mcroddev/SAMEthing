@@ -24,6 +24,15 @@
 
 #include "app.h"
 
+void *samething_dbg_userdata_ = NULL;
+
+extern "C" void samething_dbg_assert_failed(const char *const expr,
+                                            const char *const file_name,
+                                            const int line_no, void *userdata) {
+  SAMEthingApp *app = static_cast<SAMEthingApp *>(userdata);
+  app->DebugAssertionEncountered(expr, file_name, line_no);
+}
+
 /// Program entry point.
 ///
 /// @param argc The number of arguments passed to the program from the
@@ -31,7 +40,7 @@
 /// @param argv The arguments passed to the program from the environment in
 /// which the program is run.
 /// @returns See documentation for QApplication::exec().
-auto main(int argc, char* argv[]) -> int {
+auto main(int argc, char *argv[]) -> int {
   const QApplication qt_instance(argc, argv);
 
   QApplication::setApplicationName("samething");
@@ -40,6 +49,9 @@ auto main(int argc, char* argv[]) -> int {
   QApplication::setOrganizationName("mcroddev");
   QApplication::setOrganizationDomain("https://mcrod.dev");
 
-  const SAMEthingApp samething_app;
+  SAMEthingApp samething_app;
+  samething_dbg_userdata_ = &samething_app;
+  samething_app.Initialize();
+
   return QApplication::exec();
 }

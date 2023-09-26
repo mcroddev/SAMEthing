@@ -29,7 +29,36 @@
 #include "frontend_audio/audio.h"
 #include "frontend_database/database.h"
 
-SAMEthingApp::SAMEthingApp() noexcept : model_db_({}) {
+SAMEthingApp::SAMEthingApp() noexcept : model_db_({}) {}
+
+void SAMEthingApp::DebugAssertionEncountered(const char* const expr,
+                                             const char* const file_name,
+                                             const int line_no) noexcept {
+  const QString error_msg = QString(
+                                "Debug assertion '%1' failed.\n"
+                                "File: %2\n"
+                                "Line: %3")
+                                .arg(expr, file_name, QString::number(line_no));
+
+  QMessageBox box;
+  box.setIcon(QMessageBox::Critical);
+  box.addButton(QMessageBox::Abort);
+  box.addButton(QMessageBox::Ignore);
+  box.setWindowTitle(tr("Debug assertion!"));
+  box.setText(error_msg);
+
+  switch (box.exec()) {
+    case QMessageBox::Abort:
+      abort();
+      return;
+
+    case QMessageBox::Ignore:
+    default:
+      return;
+  }
+}
+
+void SAMEthingApp::Initialize() noexcept {
   DatabaseLoad();
   AudioInitialize();
   SignalsConnectToSlots();
@@ -109,6 +138,19 @@ void SAMEthingApp::SignalsConnectToSlots() noexcept {
           [this]() {
             if (!samething_audio_is_init()) {
               // This button should've been disabled...
+              return;
+            }
+
+            if (main_window_controller_.LocationCodeCountGet() <= 0) {
+              QMessageBox::warning(
+                  &main_window_controller_, tr("No location codes"),
+                  tr("You must specify at least one location code."));
+              return;
+            }
+
+            if (main_window_controller_.CallsignGet().isEmpty()) {
+              QMessageBox::warning(&main_window_controller_, tr("No callsign"),
+                                   tr("You must specify a callsign."));
               return;
             }
 
@@ -233,16 +275,14 @@ void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
   samething_core_gen_ctx ctx = {};
   samething_core_ctx_config(&ctx, &header);
 
-  unsigned int sample_cnt = 0;
-  while (sample_cnt < ctx.samples_num_max) {
+  while (ctx.seq_state != SAMETHING_CORE_SEQ_STATE_NUM) {
     samething_core_samples_gen(&ctx);
 
     if (!samething_audio_buffer_play(&dev, ctx.sample_data,
-                                SAMETHING_CORE_SAMPLES_NUM_MAX)) {
+                                     SAMETHING_CORE_SAMPLES_NUM_MAX)) {
       // Error!
       return;
     }
-    sample_cnt += SAMETHING_CORE_SAMPLES_NUM_MAX;
   }
 }
 

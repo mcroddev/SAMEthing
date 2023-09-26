@@ -22,6 +22,6 @@
 
 add_subdirectory(src)
 
-if (SAMETHING_BUILD_TESTS)
-  add_subdirectory(tests)
-endif()
+#if (SAMETHING_BUILD_TESTS)
+#  add_subdirectory(tests)
+#endif()

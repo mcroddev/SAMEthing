@@ -33,13 +33,20 @@ MainWindowController::MainWindowController() noexcept {
   ui_.attn_sig_duration_->setMinimum(SAMETHING_CORE_ATTN_SIG_MIN);
   ui_.attn_sig_duration_->setMaximum(SAMETHING_CORE_ATTN_SIG_MAX);
 
-  ui_.valid_time_period_->setMaximum(SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
-
   ui_.callsign_->setMaxLength(SAMETHING_CORE_ID_LEN_MAX);
+  ui_.callsign_->setValidator(&callsign_validator_);
 
   // Set the default originator time to be the current time to avoid the default
   // being 2000/1/1 0000.
   ui_.org_time_->setDateTime(QDateTime::currentDateTime());
+
+  callsign_validator_.setRegularExpression(
+      QRegularExpression("[/,A-Z,a-z, ]+"));
+  ui_.callsign_->setValidator(&callsign_validator_);
+
+  QFont f = ui_.callsign_->font();
+  f.setCapitalization(QFont::AllUppercase);
+  ui_.callsign_->setFont(f);
 
   SignalsConnectToSlots();
 }
@@ -100,12 +107,29 @@ void MainWindowController::SignalsConnectToSlots() noexcept {
 
 [[nodiscard]] auto MainWindowController::CallsignGet() const noexcept
     -> QString {
-  return ui_.callsign_->text();
+  QString callsign = ui_.callsign_->text().toUpper();
+  qsizetype callsign_len = callsign.length();
+
+  if (callsign_len < SAMETHING_CORE_ID_LEN_MAX) {
+    callsign_len = SAMETHING_CORE_ID_LEN_MAX - callsign_len;
+
+    while (callsign_len--) {
+      callsign += ' ';
+    }
+  }
+  return callsign;
 }
 
 [[nodiscard]] auto MainWindowController::ValidTimePeriodGet() const noexcept
     -> QString {
-  return nullptr;
+  QString time_period;
+
+  time_period += QString::number(ui_.valid_time_period_->time().hour())
+                     .rightJustified(2, '0');
+  time_period += QString::number(ui_.valid_time_period_->time().minute())
+                     .rightJustified(2, '0');
+
+  return time_period;
 }
 
 [[nodiscard]] auto MainWindowController::OriginatorCodeGet() const noexcept

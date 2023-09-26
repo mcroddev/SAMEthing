@@ -24,6 +24,18 @@
 
 #include "core/core.h"
 
+void *samething_dbg_userdata_ = NULL;
+
+void samething_dbg_assert_failed(const char *const expr,
+                                 const char *const file_name, const int line_no,
+                                 void *userdata) {
+  (void)userdata;
+
+  fprintf(stderr, "samething: debug assertion '%s' failed (%s:%d)\n", expr,
+          file_name, line_no);
+  abort();
+}
+
 int main(void) {
   SDL_Init(SDL_INIT_AUDIO);
 
@@ -60,13 +72,10 @@ int main(void) {
 
   samething_core_ctx_config(&ctx, &header);
 
-  unsigned int num_samples = 0;
-
   SDL_PauseAudioDevice(dev, 0);
 
-  while (num_samples < ctx.samples_num_max) {
+  while (ctx.seq_state != SAMETHING_CORE_SEQ_STATE_NUM) {
     samething_core_samples_gen(&ctx);
-    num_samples += SAMETHING_CORE_SAMPLES_NUM_MAX;
     SDL_QueueAudio(dev, ctx.sample_data,
                    sizeof(int16_t) * SAMETHING_CORE_SAMPLES_NUM_MAX);
   }

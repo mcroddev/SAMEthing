@@ -41,6 +41,12 @@ class SAMEthingApp final : public QObject {
  public:
   SAMEthingApp() noexcept;
 
+  void DebugAssertionEncountered(const char* const expr,
+                                 const char* const file_name,
+                                 const int line_no) noexcept;
+
+  void Initialize() noexcept;
+
  private:
   /// Populates various fields of the main window.
   void MainWindowPopulateFields() noexcept;
