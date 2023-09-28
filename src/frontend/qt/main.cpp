@@ -24,12 +24,12 @@
 
 #include "app.h"
 
-void *samething_dbg_userdata_ = NULL;
+void *samething_dbg_userdata_ = nullptr;
 
 extern "C" void samething_dbg_assert_failed(const char *const expr,
                                             const char *const file_name,
                                             const int line_no, void *userdata) {
-  SAMEthingApp *app = static_cast<SAMEthingApp *>(userdata);
+  auto *app = static_cast<SAMEthingApp *>(userdata);
   app->DebugAssertionEncountered(expr, file_name, line_no);
 }
 

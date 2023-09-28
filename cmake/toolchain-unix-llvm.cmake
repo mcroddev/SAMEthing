@@ -25,9 +25,5 @@ set(SAMETHING_TOOLCHAIN_PATH
 
 set(CMAKE_C_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang")
 set(CMAKE_CXX_COMPILER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/clang++")
-
-# XXX: This might be a problem...
-#set(CMAKE_LINKER "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/lld")
-
 set(CMAKE_AR "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ar")
 set(CMAKE_RANLIB "${SAMETHING_TOOLCHAIN_PATH}/llvm/bin/llvm-ranlib")

@@ -25,7 +25,7 @@
 #include <QMessageBox>
 #include <QTreeWidgetItem>
 
-#include "core/core.h"
+#include "samething/core.h"
 
 MainWindowController::MainWindowController() noexcept {
   ui_.setupUi(this);
@@ -110,7 +110,7 @@ void MainWindowController::SignalsConnectToSlots() noexcept {
   QString callsign = ui_.callsign_->text().toUpper();
   qsizetype callsign_len = callsign.length();
 
-  if (callsign_len < SAMETHING_CORE_ID_LEN_MAX) {
+  if (!callsign.isEmpty() && callsign_len < SAMETHING_CORE_ID_LEN_MAX) {
     callsign_len = SAMETHING_CORE_ID_LEN_MAX - callsign_len;
 
     while (callsign_len--) {

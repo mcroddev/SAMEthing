@@ -31,7 +31,7 @@
 # of just a warning.
 cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
 
-project(samething
+project(SAMEthing
         VERSION 1.0.0.0
         DESCRIPTION "Specific Area Message Encoding (SAME) header generator"
         HOMEPAGE_URL "https://github.com/mcroddev/samething"
@@ -40,8 +40,8 @@ project(samething
 # Toolchain files are required so that CMake knows where to look for our custom
 # toolchain.
 if (NOT CMAKE_TOOLCHAIN_FILE)
-  message(FATAL_ERROR "A toolchain file is required to be specified. Please "
-          "consider one of the presets to do this for you.")
+  message(FATAL_ERROR "An appropriate toolchain file is required to be "
+          "specified. Use one of the presets to do this for you.")
 endif ()
 
 # Generate a "compile_commands.json" file containing the exact compiler calls
@@ -61,8 +61,9 @@ function(samething_build_type_default_set BUILD_TYPE_DEFAULT)
 
     # Set the possible values of build type for cmake-gui.
     set_property(CACHE CMAKE_BUILD_TYPE
-                 PROPERTY STRINGS "Debug" "Release")
-  endif ()
+                 PROPERTY STRINGS
+                 "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+  endif()
 endfunction()
 
 # Configures the project wide build settings for C targets.
@@ -75,27 +76,41 @@ function(samething_build_settings_c_configure)
                           c_std_17)
 
   if (SAMETHING_BUILD_TESTS)
-    target_compile_definitions(samething-build-settings-c INTERFACE SAMETHING_TESTING)
-  endif ()
+    target_compile_definitions(samething-build-settings-c INTERFACE
+                               SAMETHING_TESTING)
+  endif()
 
   if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
     target_compile_options(samething-build-settings-c INTERFACE
                            -Wall -Werror -Wextra)
 
+    target_link_options(samething-build-settings-c INTERFACE -fuse-ld=lld)
+
+    if (SAMETHING_ENABLE_SANITIZERS)
+      target_compile_options(samething-build-settings-c INTERFACE
+                             -fno-omit-frame-pointer
+                             -fno-optimize-sibling-calls)
+
+      target_compile_options(samething-build-settings-c INTERFACE
+                             -fsanitize=address,undefined)
+      target_link_options(samething-build-settings-c INTERFACE
+                          -fsanitize=address,undefined)
+    endif()
+
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       target_compile_options(samething-build-settings-c INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       target_compile_options(samething-build-settings-c INTERFACE -Ofast)
-    else ()
+    else()
       message(FATAL_ERROR "Unable to set project wide build settings for C "
               "targets: the build type ${CMAKE_BUILD_TYPE} is "
               "unhandled!")
-    endif ()
-  else ()
+    endif()
+  else()
     message(FATAL_ERROR "Unable to set project wide build settings for C "
             "targets: the C compiler ${CMAKE_C_COMPILER_ID} is "
             "unhandled!")
-  endif ()
+  endif()
 endfunction()
 
 # Configures the project wide build settings for C++ targets.
@@ -108,27 +123,41 @@ function(samething_build_settings_cpp_configure)
                           cxx_std_17)
 
   if (SAMETHING_BUILD_TESTS)
-    target_compile_definitions(samething-build-settings-cpp INTERFACE SAMETHING_TESTING)
-  endif ()
+    target_compile_definitions(samething-build-settings-cpp INTERFACE
+                               SAMETHING_TESTING)
+  endif()
 
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(samething-build-settings-cpp INTERFACE
                            -Wall -Werror -Wextra)
 
+    target_link_options(samething-build-settings-cpp INTERFACE -fuse-ld=lld)
+
+    if (SAMETHING_ENABLE_SANITIZERS)
+      target_compile_options(samething-build-settings-cpp INTERFACE
+                             -fno-omit-frame-pointer
+                             -fno-optimize-sibling-calls)
+
+      target_compile_options(samething-build-settings-cpp INTERFACE
+                             -fsanitize=address,undefined)
+      target_link_options(samething-build-settings-cpp INTERFACE
+                          -fsanitize=address,undefined)
+    endif()
+
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       target_compile_options(samething-build-settings-cpp INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
       target_compile_options(samething-build-settings-cpp INTERFACE -Ofast)
-    else ()
+    else()
       message(FATAL_ERROR "Unable to set project wide build settings for C++ "
               "targets: the build type ${CMAKE_BUILD_TYPE} is "
               "unhandled!")
-    endif ()
-  else ()
+    endif()
+  else()
     message(FATAL_ERROR "Unable to set project wide build settings for C++ "
             "targets: the C++ compiler ${CMAKE_CXX_COMPILER_ID} is "
             "unhandled!")
-  endif ()
+  endif()
 endfunction()
 
 function(samething_options_handle)
@@ -137,6 +166,8 @@ function(samething_options_handle)
   option(SAMETHING_ENABLE_SANITIZERS
          "Enables the address sanitizer and the undefined behavior sanitizer"
          OFF)
+
+  option(SAMETHING_BUILD_QT_FRONTEND "Build the Qt frontend" OFF)
 endfunction()
 
 function(samething_tests_enable)
@@ -146,9 +177,9 @@ function(samething_tests_enable)
   # philosophy, this is the recommended way to pull in googletest according to
   # https://google.github.io/googletest/quickstart-cmake.html.
   FetchContent_Declare(
-          googletest
-          GIT_REPOSITORY https://github.com/google/googletest.git
-          GIT_TAG main
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG main
   )
 
   # For Windows: Prevent overriding the parent project's compiler/linker

@@ -63,7 +63,8 @@ extern "C" {
 /// The maximum number of characters a header can be.
 #define SAMETHING_CORE_HEADER_SIZE_MAX (252)
 
-/// ...
+/// This is set to the location code index signifying the last location code
+/// entry.
 #define SAMETHING_CORE_LOCATION_CODE_END_MARKER ("FFFFFF")
 
 /// How many samples will we generate for every `samething_core_samples_gen()`

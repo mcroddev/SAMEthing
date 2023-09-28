@@ -39,22 +39,22 @@ set(CONTROLLERS_HDRS controllers/location_code_editor.h
 set(WIDGETS_SRCS widgets/valid_time_period_spinbox.cpp)
 set(WIDGETS_HDRS widgets/valid_time_period_spinbox.h)
 
-qt_add_executable(samething_qt ${SRCS}
-                               ${HDRS}
-                               ${CONTROLLERS_SRCS}
-                               ${CONTROLLERS_HDRS}
-                               ${VIEWS_FILES}
-                               ${WIDGETS_SRCS}
-                               ${WIDGETS_HDRS})
+qt_add_executable(SAMEthingQt ${SRCS}
+                              ${HDRS}
+                              ${CONTROLLERS_SRCS}
+                              ${CONTROLLERS_HDRS}
+                              ${VIEWS_FILES}
+                              ${WIDGETS_SRCS}
+                              ${WIDGETS_HDRS})
 
-target_include_directories(samething_qt PRIVATE .)
+target_include_directories(SAMEthingQt PRIVATE .)
 
-target_link_libraries(samething_qt PRIVATE Qt6::Widgets
-                                           frontendaudio
-                                           frontenddatabase
-                                           core
-                                           samething-build-settings-cpp)
+target_link_libraries(SAMEthingQt PRIVATE Qt6::Widgets
+                                          SAMEthingAudio
+                                          SAMEthingDatabase
+                                          SAMEthingCore
+                                          samething-build-settings-cpp)
 
-set_target_properties(samething_qt PROPERTIES
+set_target_properties(SAMEthingQt PROPERTIES
                       WIN32_EXECUTABLE ON
                       MACOSX_BUNDLE ON)

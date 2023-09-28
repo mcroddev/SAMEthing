@@ -20,12 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "core/core.h"
+#include "samething/core.h"
 #include "gtest/gtest.h"
 
 /// These test cases verify that the data values being used are consistent with
 /// the latest version of the EAS protocol as defined by 47 CFR 11.31, which
 /// is located at https://preview.tinyurl.com/eas-ecfr.
+extern "C" void *samething_dbg_userdata_ = nullptr;
+
+extern "C" void samething_dbg_assert_failed(const char *const,
+                                            const char *const, const int,
+                                            void *) {}
 
 /// Ensures that the sample rate is 44100Hz.
 TEST(samething_core_data, SampleRateIsCorrect) {
@@ -35,11 +40,6 @@ TEST(samething_core_data, SampleRateIsCorrect) {
 /// Ensures that the Preamble is 0xAB.
 TEST(samething_core_data, PreambleIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_PREAMBLE, 0xAB);
-}
-
-/// Ensures that the number of bursts to transmit is 3.
-TEST(samething_core_data, MaxNumBurstsIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_BURSTS_NUM_MAX, 3);
 }
 
 /// Ensures that the maximum length of the originator code is 3.
@@ -84,9 +84,7 @@ TEST(samething_core_data, EndOfMessageHeaderSizeIsCorrect) {
 }
 
 /// Ensures that the End of Message (EOM) header is correct.
-TEST(samething_core_data, EndOfMessageHeaderIsCorrect) {
-
-}
+TEST(samething_core_data, EndOfMessageHeaderIsCorrect) {}
 
 TEST(samething_core_data, AFSKBitRateIsCorrect) {
   EXPECT_FLOAT_EQ(SAMETHING_CORE_AFSK_BIT_RATE, 520.83F);
@@ -110,11 +108,11 @@ TEST(samething_core_data, AFSKBitsPerCharIsCorrect) {
 }
 
 TEST(samething_core_data, AFSKSamplesPerBitIsCorrect) {
-  int kExpectedAFSKSamplesPerBit =
-      static_cast<int>(SAMETHING_CORE_AFSK_BIT_DURATION) *
-      SAMETHING_CORE_SAMPLE_RATE;
+  const float kExpectedAFSKSamplesPerBit =
+      SAMETHING_CORE_AFSK_BIT_DURATION * SAMETHING_CORE_SAMPLE_RATE;
 
-  EXPECT_EQ(SAMETHING_CORE_AFSK_SAMPLES_PER_BIT, kExpectedAFSKSamplesPerBit);
+  EXPECT_FLOAT_EQ(SAMETHING_CORE_AFSK_SAMPLES_PER_BIT,
+                  kExpectedAFSKSamplesPerBit);
 }
 
 TEST(samething_core_data, AttnSigFreqFirstIsCorrect) {

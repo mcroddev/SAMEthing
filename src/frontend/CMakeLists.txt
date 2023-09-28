@@ -20,7 +20,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+# Compile any modules which are common to frontends.
 add_subdirectory(common)
-add_subdirectory(qt)
 
-add_subdirectory(sdl)
+# Now compile frontends as appropriate.
+if (SAMETHING_BUILD_QT_FRONTEND)
+  add_subdirectory(qt)
+endif()

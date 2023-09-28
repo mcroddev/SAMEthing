@@ -22,13 +22,13 @@
 
 #include <cstring>
 
-#include "core/core.h"
+#include "samething/core.h"
 #include "gtest/gtest.h"
 
-TEST(samething_core_field_add, AddsField) {
-  std::uint8_t results[10] = {};
-  std::size_t size = 0;
+extern "C" void *samething_dbg_userdata_ = nullptr;
 
-  samething_core_field_add(results, &size, "TEST", 4);
-  EXPECT_TRUE(std::memcmp(results, "TEST-", size) == 0);
+extern "C" void samething_dbg_assert_failed(const char *const,
+                                            const char *const, const int,
+                                            void *) {
+  std::abort();
 }

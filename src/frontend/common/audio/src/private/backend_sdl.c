@@ -22,7 +22,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "frontend_audio/audio.h"
+#include "samething/frontend/audio.h"
 #include "samething/compiler.h"
 #include "samething/debug.h"
 

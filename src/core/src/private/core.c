@@ -76,7 +76,7 @@
 //     the audio device incrementally. In our case, we choose to generate 4,096
 //     samples at a time.
 
-#include "core/core.h"
+#include "samething/core.h"
 
 #include <math.h>
 #include <string.h>

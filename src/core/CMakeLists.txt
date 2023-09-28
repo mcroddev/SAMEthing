@@ -24,6 +24,6 @@
 add_subdirectory(src)
 
 # Now, compile any tests if needed.
-#if (SAMETHING_BUILD_TESTS)
-#  add_subdirectory(tests)
-#endif()
+if (SAMETHING_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()

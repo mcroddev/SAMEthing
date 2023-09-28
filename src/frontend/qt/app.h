@@ -29,9 +29,9 @@
 
 #include "controllers/location_code_editor.h"
 #include "controllers/main_window.h"
-#include "core/core.h"
-#include "frontend_audio/audio.h"
-#include "frontend_database/database.h"
+#include "samething/core.h"
+#include "samething/frontend/audio.h"
+#include "samething/frontend/database.h"
 
 /// Defines the main application class, which is essentially interconnectivity
 /// between models, views, and controllers.

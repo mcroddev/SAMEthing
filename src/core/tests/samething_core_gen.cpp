@@ -20,25 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "core/core.h"
+#include "samething/core.h"
 #include "gtest/gtest.h"
 
-namespace {};
+extern "C" void *samething_dbg_userdata_ = nullptr;
 
-TEST(samething_core_gen, HandlesOriginatorCode) {
-#if 0
-  const struct samething_core_header header = {
-      .location_codes = {"010101", SAMETHING_CORE_LOCATION_CODE_END_MARKER},
-      .valid_time_period = "1000",
-      .originator_code = "EAS",
-      .event_code = "RMT",
-      .id = "WABC/FM",
-      .originator_time = "0231233",
-      .attn_sig_duration = 8.0F};
-
-  std::size_t num_samples = 0;
-  auto samples = (float *)malloc(sizeof(float) * 3'000'000);
-
-  samething_core_gen(&header, samples, &num_samples);
-#endif
+extern "C" void samething_dbg_assert_failed(const char *const,
+                                            const char *const, const int,
+                                            void *) {
+  std::abort();
 }
+
+TEST(samething_core_gen, HandlesOriginatorCode) {}

@@ -20,18 +20,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "samething/core.h"
 #include "gtest/gtest.h"
-#include "core/core.h"
+
+extern "C" void *samething_dbg_userdata_ = nullptr;
+
+extern "C" void samething_dbg_assert_failed(const char *const,
+                                            const char *const, const int,
+                                            void *) {
+  std::abort();
+}
 
 TEST(samething_core_silence_gen, GeneratesOneSecondOfSilence) {
-#if 0
-  float samples[SAMETHING_CORE_SAMPLE_RATE];
-  std::size_t size = 0;
+  struct samething_core_gen_ctx ctx = {};
+  samething_core_silence_gen(&ctx, SAMETHING_CORE_SAMPLES_NUM_MAX);
 
-  samething_core_silence_gen(samples, &size);
-
-  while (size--) {
-    EXPECT_FLOAT_EQ(samples[size], 0.0F);
+  for (size_t i = 0; i < SAMETHING_CORE_SAMPLES_NUM_MAX; ++i) {
+    EXPECT_EQ(ctx.sample_data[i], 0);
   }
-#endif
 }

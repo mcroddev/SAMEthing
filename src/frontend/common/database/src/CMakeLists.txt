@@ -22,9 +22,12 @@
 
 set(SRCS_PRIVATE private/database.c private/ini.c)
 set(HDRS_PRIVATE private/ini.h)
-set(HDRS_PUBLIC public/frontend_database/database.h)
+set(HDRS_PUBLIC public/samething/frontend/database.h)
 
-add_library(frontenddatabase OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC} ${HDRS_PRIVATE})
+add_library(SAMEthingDatabase OBJECT ${SRCS_PRIVATE}
+                                     ${HDRS_PUBLIC}
+                                     ${HDRS_PRIVATE})
 
-target_include_directories(frontenddatabase PUBLIC public)
-target_link_libraries(frontenddatabase PRIVATE samething-build-settings-c samething-common)
+target_include_directories(SAMEthingDatabase PUBLIC public)
+target_link_libraries(SAMEthingDatabase PRIVATE samething-build-settings-c
+                                                samething-common)

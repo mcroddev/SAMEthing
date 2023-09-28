@@ -25,10 +25,10 @@ find_package(SDL2 REQUIRED)
 set(SRCS_PRIVATE private/backend_sdl.c)
 set(HDRS_PRIVATE private/backend_sdl.h)
 
-set(HDRS_PUBLIC public/frontend_audio/audio.h)
+set(HDRS_PUBLIC public/samething/frontend/audio.h)
 
-add_library(frontendaudio OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC})
+add_library(SAMEthingAudio OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC})
 
-target_include_directories(frontendaudio PUBLIC public)
-target_link_libraries(frontendaudio PRIVATE samething-build-settings-c
-                                            samething-common SDL2::SDL2)
+target_include_directories(SAMEthingAudio PUBLIC public)
+target_link_libraries(SAMEthingAudio PRIVATE samething-build-settings-c
+                                             samething-common SDL2::SDL2)

@@ -18,7 +18,6 @@
       "description": "Default configuration on Unix hosts",
       "inherits": "default",
       "cmakeExecutable": "${sourceDir}/toolchains/unix/assets/cmake/bin/cmake",
-      "toolchainFile": "${sourceDir}/cmake/toolchain-unix.cmake",
       "cacheVariables": {
         "CMAKE_MAKE_PROGRAM": {
           "type": "FILEPATH",
@@ -43,11 +42,33 @@
       }
     },
     {
+      "name": "UnixLLVM",
+      "hidden": true,
+      "inherits": "Unix",
+      "description": "Sets cache variables for use with LLVM compiler frontend",
+      "toolchainFile": "${sourceDir}/cmake/toolchain-unix-llvm.cmake"
+    },
+    {
       "name": "UnitTests",
       "hidden": true,
       "description": "Sets cache variables for unit tests",
       "cacheVariables": {
         "SAMETHING_BUILD_TESTS": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "SAMETHING_ENABLE_SANITIZERS": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
+      "name": "QtFrontend",
+      "hidden": true,
+      "description": "Sets cache variables to compile the Qt frontend",
+      "cacheVariables": {
+        "SAMETHING_BUILD_QT_FRONTEND": {
           "type": "BOOL",
           "value": "ON"
         }
@@ -57,11 +78,21 @@
       "name": "UnixLLVMDebugUnitTests",
       "displayName": "Build samething unit tests in Debug mode",
       "inherits": [
-        "Unix",
+        "UnixLLVM",
         "Debug",
         "UnitTests"
       ],
-      "binaryDir": "${sourceDir}/build/llvm-unit-tests-debug"
+      "binaryDir": "${sourceDir}/build/llvm-debug-unit-tests"
+    },
+    {
+      "name": "UnixLLVMDebugQtFrontend",
+      "displayName": "Build samething with Qt frontend in Debug mode",
+      "inherits": [
+        "UnixLLVM",
+        "Debug",
+        "QtFrontend"
+      ],
+      "binaryDir": "${sourceDir}/build/llvm-debug-qt-frontend"
     }
   ]
 }

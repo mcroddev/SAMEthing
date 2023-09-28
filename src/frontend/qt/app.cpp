@@ -25,9 +25,9 @@
 #include <QFile>
 #include <QMessageBox>
 
-#include "core/core.h"
-#include "frontend_audio/audio.h"
-#include "frontend_database/database.h"
+#include "samething/core.h"
+#include "samething/frontend/audio.h"
+#include "samething/frontend/database.h"
 
 SAMEthingApp::SAMEthingApp() noexcept : model_db_({}) {}
 

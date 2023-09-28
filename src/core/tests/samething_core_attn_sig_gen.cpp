@@ -20,5 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "samething/core.h"
 #include "gtest/gtest.h"
-#include "core/core.h"
+
+extern "C" void *samething_dbg_userdata_ = nullptr;
+
+extern "C" void samething_dbg_assert_failed(const char *const,
+                                            const char *const, const int,
+                                            void *) {
+  std::abort();
+}
