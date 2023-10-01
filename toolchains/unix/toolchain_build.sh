@@ -26,14 +26,15 @@
 # systems, far too many to enumerate here.
 
 ############################################################################
-# When pushing a commit, the CI pipeline will check to see if any of these #s
+# When pushing a commit, the CI pipeline will check to see if any of these #
 # variables have been changed. If so, the toolchain is rebuilt.            #
 toolchain_ver="1.0.0.0"                                                    #
 llvm_ver="16.0.6"                                                          #
 gcc_ver="13.0.1"                                                           #
 cmake_ver="3.27.1"                                                         #
 ninja_ver="1.11.1"                                                         #
-qt_ver="6.5.1"                                                             #
+qt_ver="6.5.2"                                                             #
+sdl_ver="2.28.3"                                                           #
 supported_archs="AArch64 X86"                                              #
 project_name="samething"                                                   #
 tarball_name="${project_name}-toolchain-unix-v${toolchain_ver}.tar.gz"     #
@@ -192,6 +193,51 @@ llvm_build() {
   cd "${staging_dir}" || exit
 }
 
+qt_build() {
+  echo "Downloading Qt ${qt_ver}..."
+  shortened_qt_ver=$(echo ${qt_ver} | cut -c 1-3)
+  file_download "https://download.qt.io/archive/qt/${shortened_qt_ver}/${qt_ver}/single/qt-everywhere-src-${qt_ver}.tar.xz"
+
+  echo "Extracting Qt ${qt_ver}..."
+  tarball_extract "qt-everywhere-src-${qt_ver}.tar.xz"
+
+  echo "Stubbed."
+  cd "${staging_dir}" || exit
+}
+
+sdl_build() {
+  echo "Downloading SDL ${sdl_ver}..."
+  file_download "https://github.com/libsdl-org/SDL/releases/download/release-${sdl_ver}/SDL2-${sdl_ver}.tar.gz"
+
+  echo "Extracting SDL ${sdl_ver}..."
+  tarball_extract "SDL2-${sdl_ver}.tar.gz"
+
+  cd "SDL2-${sdl_ver}" || exit
+  echo "Configuring SDL2-${sdl_ver} release version, please wait..."
+
+  LDFLAGS='-fuse-ld=lld' cmake -S . -B release_build -G Ninja \
+  -DCMAKE_BUILD_TYPE:STRING=Release "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/sdl-release" "$@" || exit
+
+  echo "Building and installing release version of SDL2-${sdl_ver}, this may take a while."
+  cd release_build || exit
+
+  ninja -v install || exit
+  echo "Installation of release version of SDL2-${sdl_ver} complete."
+
+  cd .. || exit
+  echo "Configuring SDL2-${sdl_ver} debug version, please wait..."
+
+  LDFLAGS='-fuse-ld=lld' cmake -S . -B debug_build -G Ninja \
+  -DCMAKE_BUILD_TYPE:STRING=Debug "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/sdl-debug" "$@" || exit
+  echo "Building and installing debug version of SDL2-${sdl_ver}, please wait..."
+
+  cd debug_build || exit
+  ninja -v install || exit
+  echo "Installation of debug version of SDL2-${sdl_ver} complete."
+
+  cd "${staging_dir}" || exit
+}
+
 check_required() {
   all_commands_found=true
 
@@ -242,6 +288,31 @@ llvm_build -DCMAKE_BUILD_TYPE:STRING=Release \
            "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/llvm" \
            -DCMAKE_C_COMPILER:STRING="clang" \
            -DCMAKE_CXX_COMPILER:STRING="clang++"
+
+qt_build
+
+sdl_build -DSDL2_DISABLE_UNINSTALL:BOOL=ON \
+          -DSDL_STATIC:BOOL=ON \
+          -DSDL_SHARED:BOOL=OFF \
+          -DSDL_TESTS:BOOL=OFF \
+          -DSDL_INSTALL_TESTS:BOOL=OFF \
+          -DSDL_ATOMIC:BOOL=OFF \
+          -DSDL_VIDEO:BOOL=OFF \
+          -DSDL_RENDER:BOOL=OFF \
+          -DSDL_EVENTS:BOOL=OFF \
+          -DSDL_JOYSTICK:BOOL=OFF \
+          -DSDL_HAPTIC:BOOL=OFF \
+          -DSDL_POWER:BOOL=OFF \
+          -DSDL_TIMERS:BOOL=OFF \
+          -DSDL_FILE:BOOL=OFF \
+          -DSDL_CPUINFO:BOOL=OFF \
+          -DSDL_FILESYSTEM:BOOL=OFF \
+          -DSDL_SENSOR:BOOL=OFF \
+          -DSDL_LOCALE:BOOL=OFF \
+          -DSDL_MISC:BOOL=OFF \
+          -DSDL_HIDAPI:BOOL=OFF \
+          -DCMAKE_C_COMPILER:STRING="clang" \
+          -DCMAKE_CXX_COMPILER:STRING="clang++"
 
 echo "Removing staging directory..."
 rm -rf "${staging_dir}" || exit

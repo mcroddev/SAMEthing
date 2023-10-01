@@ -42,6 +42,17 @@
       }
     },
     {
+      "name": "Release",
+      "hidden": true,
+      "description": "Sets cache variables for release build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Release"
+        }
+      }
+    },
+    {
       "name": "UnixLLVM",
       "hidden": true,
       "inherits": "Unix",
@@ -93,6 +104,26 @@
         "QtFrontend"
       ],
       "binaryDir": "${sourceDir}/build/llvm-debug-qt-frontend"
+    },
+    {
+      "name": "UnixLLVMReleaseUnitTests",
+      "displayName": "Build SAMEthing unit tests in Release mode",
+      "inherits": [
+        "UnixLLVM",
+        "Release",
+        "UnitTests"
+      ],
+      "binaryDir": "${sourceDir}/build/llvm-release-unit-tests"
+    },
+    {
+      "name": "UnixLLVMReleaseQtFrontend",
+      "displayName": "Build SAMEthing Qt frontend in Release mode",
+      "inherits": [
+        "UnixLLVM",
+        "Release",
+        "QtFrontend"
+      ],
+      "binaryDir": "${sourceDir}/build/llvm-release-qt-frontend"
     }
   ]
 }
