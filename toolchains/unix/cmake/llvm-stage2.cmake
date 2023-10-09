@@ -45,6 +45,7 @@ set(LLVM_TOOLCHAIN_TOOLS
     llvm-nm
     llvm-size
     llvm-config
+    lld
     lldb
     liblldb
     lldb-server

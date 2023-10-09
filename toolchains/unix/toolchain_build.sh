@@ -29,7 +29,7 @@
 # When pushing a commit, the CI pipeline will check to see if any of these #
 # variables have been changed. If so, the toolchain is rebuilt.            #
 toolchain_ver="1.0.0.0"                                                    #
-llvm_ver="16.0.6"                                                          #
+llvm_ver="17.0.2"                                                          #
 gcc_ver="13.0.1"                                                           #
 cmake_ver="3.27.1"                                                         #
 ninja_ver="1.11.1"                                                         #
@@ -55,6 +55,10 @@ use_pgo=false
 # Generate toolchain tarball.
 tarball_gen=true
 
+cflags=""
+cxxflags=""
+linker="ld.lld"
+
 directory_create() {
   mkdir "$1" || exit
   echo "Created directory ${1}..."
@@ -75,15 +79,22 @@ Usage: ./toolchain_build.sh [OPTIONS]
 Builds a toolchain suitable for development and deployment of ${project_name}.
 
 Optional arguments:
-  --use-lto       Compile the toolchain with link-time optimization where
-                  appropriate. The toolchain will be faster, but the build time
-                  will be much slower and much more intensive on the host.
-                  Default is off.
-  --use-pgo       Compile the toolchain with profile-guided optimization where
-                  appropriate. The toolchain will be faster, but the build time
-                  will be much slower and much more intensive on the host.
-                  Default is off.
-  --no-tarball    Disables generation of toolchain tarball.
+  --use-lto           Compile the toolchain with link-time optimization where
+                      appropriate. The toolchain will be faster, but the build
+                      time will be much slower and much more intensive on the
+                      host. Default is off.
+
+  --use-pgo           Compile the toolchain with profile-guided optimization
+                      where appropriate. The toolchain will be faster, but the
+                      build time will be much slower and much more intensive on
+                      the host. Default is off.
+
+  --optimize-for-sys  Compile the toolchain with optimizations specific to this
+                      system. The toolchain will be slightly faster, but the
+                      resulting toolchain will not be portable to other systems.
+                      Default is off.
+
+  --no-tarball        Disables generation of toolchain tarball.
 EOF
   exit "$1"
 }
@@ -102,6 +113,11 @@ command_line_arguments_handle() {
 
       --use-pgo)
         use_pgo=true
+        ;;
+
+      --optimize-for-sys)
+        cflags='-mtune=native -march=native'
+        cxxflags='-mtune=native -march=native'
         ;;
 
       --no-tarball)
@@ -124,47 +140,6 @@ command_line_arguments_handle() {
   done
 }
 
-cmake_build() {
-  echo "Downloading CMake v${cmake_ver}..."
-  file_download "https://github.com/Kitware/CMake/releases/download/v${cmake_ver}/cmake-${cmake_ver}.tar.gz"
-
-  echo "Extracting CMake v${cmake_ver}..."
-  tarball_extract "cmake-${cmake_ver}.tar.gz"
-
-  cd "cmake-${cmake_ver}" || exit
-  echo "Configuring CMake v${cmake_ver}, please wait..."
-
-  if [ "$use_lto" = true ]; then
-    set -- "$@" "-DCMake_BUILD_LTO:BOOL=ON"
-  fi
-
-  LDFLAGS='-fuse-ld=lld' cmake -S . -B build -G Ninja "$@" || exit
-  echo "Building and installing CMake v${cmake_ver}, this may take a while."
-  cd build || exit
-  ninja -v install || exit
-  echo "Installation of CMake v${cmake_ver} complete."
-  cd "${staging_dir}" || exit
-}
-
-ninja_build() {
-  echo "Downloading ninja v${ninja_ver}..."
-  file_download "https://github.com/ninja-build/ninja/archive/refs/tags/v${ninja_ver}.tar.gz"
-
-  echo "Extracting ninja v${ninja_ver}..."
-  tarball_extract "v${ninja_ver}.tar.gz"
-
-  cd "ninja-${ninja_ver}" || exit
-  echo "Configuring ninja v${ninja_ver}, please wait..."
-
-  LDFLAGS='-fuse-ld=lld' cmake -S . -B build -G Ninja "$@" || exit
-  echo "Building and installing ninja v${ninja_ver}, this may take a while."
-
-  cd build || exit
-  ninja -v install || exit
-  echo "Installation of ninja v${ninja_ver} complete."
-  cd "${staging_dir}" || exit
-}
-
 llvm_build() {
   echo "Downloading LLVM ${llvm_ver}..."
   file_download "https://github.com/llvm/llvm-project/releases/download/llvmorg-${llvm_ver}/llvm-project-${llvm_ver}.src.tar.xz"
@@ -176,20 +151,91 @@ llvm_build() {
   cp ../cmake/llvm-stage2.cmake llvm-project-${llvm_ver}.src/clang/cmake/caches || exit
   cd llvm-project-${llvm_ver}.src || exit
 
+  set -- "-DCMAKE_INSTALL_PREFIX:STRING=${assets_dir}/llvm"
   if [ "$use_lto" = true ]; then
     set -- "$@" "-DSAMETHING_TOOLCHAIN_ENABLE_LTO:BOOL=ON"
   fi
 
-  LDFLAGS='-fuse-ld=lld' cmake -S llvm -B build -G Ninja -C clang/cmake/caches/llvm-stage1.cmake "$@" || exit
+  LDFLAGS="-fuse-ld=lld" \
+  CFLAGS=${cflags} \
+  CXXFLAGS=${cxxflags} \
+  CC="clang" \
+  CXX="clang++" \
+  CMAKE_BUILD_TYPE="Release" \
+  cmake -S llvm -B build -G Ninja -C clang/cmake/caches/llvm-stage1.cmake "$@" \
+  || exit
+
   cd build || exit
 
   echo "Building LLVM ${llvm_ver}, this will take a long time..."
-  ninja stage2-distribution || exit
+  ninja -v stage2-distribution || exit
 
   echo "Installing LLVM ${llvm_ver}..."
-  ninja stage2-install-distribution-stripped || exit
+  ninja -v stage2-install-distribution-stripped || exit
 
   echo "Installation of LLVM ${llvm_ver} complete."
+  cd "${staging_dir}" || exit
+}
+
+cmake_build() {
+  echo "Downloading CMake v${cmake_ver}..."
+  file_download "https://github.com/Kitware/CMake/releases/download/v${cmake_ver}/cmake-${cmake_ver}.tar.gz"
+
+  echo "Extracting CMake v${cmake_ver}..."
+  tarball_extract "cmake-${cmake_ver}.tar.gz"
+
+  cd "cmake-${cmake_ver}" || exit
+
+  echo "Configuring CMake v${cmake_ver}, please wait..."
+
+  set -- "-DCMAKE_INSTALL_PREFIX:STRING="${assets_dir}/cmake""
+  if [ "$use_lto" = true ]; then
+    set -- "$@" "-DCMake_BUILD_LTO:BOOL=ON"
+  fi
+
+  LDFLAGS="-fuse-ld=lld --ld-path=${assets_dir}/llvm/bin/${linker}" \
+  CC="${assets_dir}/llvm/bin/clang" \
+  CXX="${assets_dir}/llvm/bin/clang++" \
+  CFLAGS=${cflags} \
+  CXXFLAGS=${cxxflags} \
+  CMAKE_BUILD_TYPE="Release" \
+  cmake -S . -B build -G Ninja "$@" || exit
+
+  echo "Building and installing CMake v${cmake_ver}, this may take a while."
+  cd build || exit
+  ninja -v install || exit
+  echo "Installation of CMake v${cmake_ver} complete."
+
+  cd "${staging_dir}" || exit
+}
+
+ninja_build() {
+  echo "Downloading ninja v${ninja_ver}..."
+  file_download "https://github.com/ninja-build/ninja/archive/refs/tags/v${ninja_ver}.tar.gz"
+
+  echo "Extracting ninja v${ninja_ver}..."
+  tarball_extract "v${ninja_ver}.tar.gz"
+
+  cd "ninja-${ninja_ver}" || exit
+
+  echo "Configuring ninja v${ninja_ver}, please wait..."
+
+  # LTO is automatically enabled with a build type of Release. The overhead for
+  # an LTO build of Ninja is quite low, so the `--use-lto` flag is a no-op here.
+  LDFLAGS="-fuse-ld=lld --ld-path=${assets_dir}/llvm/bin/${linker}" \
+  CC="${assets_dir}/llvm/bin/clang" \
+  CXX="${assets_dir}/llvm/bin/clang++" \
+  CFLAGS=${cflags} \
+  CXXFLAGS=${cxxflags} \
+  CMAKE_BUILD_TYPE="Release" \
+  ${assets_dir}/cmake/bin/cmake -S . -B build -G Ninja \
+  -DCMAKE_INSTALL_PREFIX:STRING="${assets_dir}/ninja" || exit
+
+  echo "Building and installing ninja v${ninja_ver}, this may take a while."
+  cd build || exit
+  ninja -v install || exit
+  echo "Installation of ninja v${ninja_ver} complete."
+
   cd "${staging_dir}" || exit
 }
 
@@ -213,27 +259,85 @@ sdl_build() {
   tarball_extract "SDL2-${sdl_ver}.tar.gz"
 
   cd "SDL2-${sdl_ver}" || exit
+
   echo "Configuring SDL2-${sdl_ver} release version, please wait..."
+  LDFLAGS="-fuse-ld=lld --ld-path=${assets_dir}/llvm/bin/${linker}" \
+  CC="${assets_dir}/llvm/bin/clang" \
+  CXX="${assets_dir}/llvm/bin/clang++" \
+  CFLAGS=${cflags} \
+  CXXFLAGS=${cxxflags} \
+  CMAKE_BUILD_TYPE="Release" \
+  ${assets_dir}/cmake/bin/cmake -S . -B release_build -G Ninja \
+  -DCMAKE_INSTALL_PREFIX:STRING="${assets_dir}/sdl-release" \
+  -DSDL_STATIC:BOOL=ON \
+  -DSDL_SHARED:BOOL=OFF \
+  -DSDL_TEST:BOOL=OFF \
+  -DSDL_ATOMIC:BOOL=OFF \
+  -DSDL_AUDIO:BOOL=ON \
+  -DSDL_VIDEO:BOOL=OFF \
+  -DSDL_RENDER:BOOL=OFF \
+  -DSDL_EVENTS:BOOL=ON \
+  -DSDL_JOYSTICK:BOOL=OFF \
+  -DSDL_HAPTIC:BOOL=OFF \
+  -DSDL_HIDAPI:BOOL=OFF \
+  -DSDL_POWER:BOOL=OFF \
+  -DSDL_TIMERS:BOOL=OFF \
+  -DSDL_FILE:BOOL=OFF \
+  -DSDL_CPUINFO:BOOL=OFF \
+  -DSDL_FILESYSTEM:BOOL=OFF \
+  -DSDL_SENSOR:BOOL=OFF \
+  -DSDL_LOCALE:BOOL=OFF \
+  -DSDL_MISC:BOOL=OFF || exit
 
-  LDFLAGS='-fuse-ld=lld' cmake -S . -B release_build -G Ninja \
-  -DCMAKE_BUILD_TYPE:STRING=Release "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/sdl-release" "$@" || exit
+  echo "Building and installing release version of SDL2-${sdl_ver}, this may " \
+  "take a while."
 
-  echo "Building and installing release version of SDL2-${sdl_ver}, this may take a while."
   cd release_build || exit
-
   ninja -v install || exit
   echo "Installation of release version of SDL2-${sdl_ver} complete."
 
   cd .. || exit
+
   echo "Configuring SDL2-${sdl_ver} debug version, please wait..."
+  LDFLAGS="-fuse-ld=lld --ld-path=${assets_dir}/llvm/bin/${linker}" \
+  CC="${assets_dir}/llvm/bin/clang" \
+  CXX="${assets_dir}/llvm/bin/clang++" \
+  CFLAGS=${cflags} \
+  CXXFLAGS=${cxxflags} \
+  CMAKE_BUILD_TYPE="Debug" \
+  ${assets_dir}/cmake/bin/cmake -S . -B debug_build -G Ninja \
+  -DCMAKE_INSTALL_PREFIX:STRING="${assets_dir}/sdl-debug" \
+  -DSDL_STATIC:BOOL=ON \
+  -DSDL_SHARED:BOOL=OFF \
+  -DSDL_TEST:BOOL=OFF \
+  -DSDL_ATOMIC:BOOL=OFF \
+  -DSDL_AUDIO:BOOL=ON \
+  -DSDL_VIDEO:BOOL=OFF \
+  -DSDL_RENDER:BOOL=OFF \
+  -DSDL_EVENTS:BOOL=ON \
+  -DSDL_JOYSTICK:BOOL=OFF \
+  -DSDL_HAPTIC:BOOL=OFF \
+  -DSDL_HIDAPI:BOOL=OFF \
+  -DSDL_POWER:BOOL=OFF \
+  -DSDL_TIMERS:BOOL=OFF \
+  -DSDL_FILE:BOOL=OFF \
+  -DSDL_CPUINFO:BOOL=OFF \
+  -DSDL_FILESYSTEM:BOOL=OFF \
+  -DSDL_SENSOR:BOOL=OFF \
+  -DSDL_LOCALE:BOOL=OFF \
+  -DSDL_MISC:BOOL=OFF || exit
 
-  LDFLAGS='-fuse-ld=lld' cmake -S . -B debug_build -G Ninja \
-  -DCMAKE_BUILD_TYPE:STRING=Debug "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/sdl-debug" "$@" || exit
   echo "Building and installing debug version of SDL2-${sdl_ver}, please wait..."
-
   cd debug_build || exit
   ninja -v install || exit
   echo "Installation of debug version of SDL2-${sdl_ver} complete."
+
+  cd "${assets_dir}" || exit
+
+  cp sdl-debug/lib/libSDL2d.a sdl-release/lib || exit
+  cp sdl-debug/lib/libSDL2maind.a sdl-release/lib || exit
+  mv sdl-release sdl || exit
+  rm -rf sdl-debug || exit
 
   cd "${staging_dir}" || exit
 }
@@ -274,45 +378,17 @@ directory_create "${staging_dir}"
 directory_create "${assets_dir}"
 cd "${staging_dir}" || exit
 
-cmake_build -DCMAKE_BUILD_TYPE:STRING=Release \
-            "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/cmake" \
-            -DCMAKE_C_COMPILER:STRING="clang" \
-            -DCMAKE_CXX_COMPILER:STRING="clang++"
+# First, compile the compilers.
+llvm_build
 
-ninja_build -DCMAKE_BUILD_TYPE:STRING=Release \
-            "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/ninja" \
-            -DCMAKE_C_COMPILER:STRING="clang" \
-            -DCMAKE_CXX_COMPILER:STRING="clang++"
+# Using the generated LLVM compiler, compile the rest of the software for the
+# host.
+cmake_build
+ninja_build
 
-llvm_build -DCMAKE_BUILD_TYPE:STRING=Release \
-           "-DCMAKE_INSTALL_PREFIX:STRING=""${assets_dir}""/llvm" \
-           -DCMAKE_C_COMPILER:STRING="clang" \
-           -DCMAKE_CXX_COMPILER:STRING="clang++"
-
+# Now compile dependencies for targets using the generated LLVM compiler.
 qt_build
-
-sdl_build -DSDL2_DISABLE_UNINSTALL:BOOL=ON \
-          -DSDL_STATIC:BOOL=ON \
-          -DSDL_SHARED:BOOL=OFF \
-          -DSDL_TESTS:BOOL=OFF \
-          -DSDL_INSTALL_TESTS:BOOL=OFF \
-          -DSDL_ATOMIC:BOOL=OFF \
-          -DSDL_VIDEO:BOOL=OFF \
-          -DSDL_RENDER:BOOL=OFF \
-          -DSDL_EVENTS:BOOL=OFF \
-          -DSDL_JOYSTICK:BOOL=OFF \
-          -DSDL_HAPTIC:BOOL=OFF \
-          -DSDL_POWER:BOOL=OFF \
-          -DSDL_TIMERS:BOOL=OFF \
-          -DSDL_FILE:BOOL=OFF \
-          -DSDL_CPUINFO:BOOL=OFF \
-          -DSDL_FILESYSTEM:BOOL=OFF \
-          -DSDL_SENSOR:BOOL=OFF \
-          -DSDL_LOCALE:BOOL=OFF \
-          -DSDL_MISC:BOOL=OFF \
-          -DSDL_HIDAPI:BOOL=OFF \
-          -DCMAKE_C_COMPILER:STRING="clang" \
-          -DCMAKE_CXX_COMPILER:STRING="clang++"
+sdl_build
 
 echo "Removing staging directory..."
 rm -rf "${staging_dir}" || exit

@@ -34,31 +34,31 @@ Disadvantages:
 
 ## Structure
 
-Each toolchain is capable of targeting the x86-64 and ARM 32-bit/64-bit
-architectures.
-
-There are only 3 host systems where the toolchain can run on:
+There are only 3 officially supported host systems where the toolchain can run
+on:
 
 * [Windows 11 x86-64](https://www.microsoft.com/en-us/windows?r=1)
-    - Supported targets: [Windows 11 x86-64](https://www.microsoft.com/en-us/windows?r=1)
+    - Officially supported targets: [Windows 11 x86-64](https://www.microsoft.com/en-us/windows?r=1)
 
 * [Linux x86-64](https://www.linux.org/)
-    - Supported targets: [Linux x86-64](https://www.linux.org/)
+    - Officially supported targets: [Linux x86-64](https://www.linux.org/)
 
 * [macOS Sonoma on Apple Silicon](https://www.apple.com/macos/)
-    - Supported targets: [macOS Sonoma on Apple Silicon](https://www.apple.com/macos/sonoma)
+    - Officially supported targets: [macOS Sonoma on Apple Silicon](https://www.apple.com/macos/sonoma)
 
-**NOTE:** "Supported" does not mean "won't work on other targets"; it means we
-do not officially support any target other than the aforementioned.
+**NOTE:** "Officially supported" does not strictly mean "this won't work on other
+targets"; it really does simply mean we do not officially support anything other
+than the aforementioned.
 
 Each toolchain contains the following software:
 
-* [LLVM 16.0.6](https://llvm.org/)
-* [gcc 13.2.0](https://gcc.gnu.org/)
-* [CMake 3.27.1](https://cmake.org/)
-* [ninja v1.11.1](https://ninja-build.org/)
-* [Qt 6.5.2](https://www.qt.io/)
-* [SDL 2.28.3](https://www.libsdl.org/)
+* [LLVM 16.0.6](https://llvm.org/) - primary compiler
+* [gcc 13.2.0](https://gcc.gnu.org/) - secondary compiler
+* [CMake 3.27.1](https://cmake.org/) - build system generator
+* [ninja v1.11.1](https://ninja-build.org/) - build system
+* [Qt 6.5.2](https://www.qt.io/) - GUI framework for Windows/Linux/macOS
+* [SDL 2.28.3](https://www.libsdl.org/) - audio support for Windows/Linux/macOS
+* [doxygen 1.9.8](https://www.doxygen.nl/) - documentation generator
 
 For host system specific instructions, navigate to the folder corresponding to
 your system.

@@ -49,3 +49,19 @@ targets; the toolchain provides custom C/C++ development libraries and headers.
 Simply execute the `toolchain_fetch.sh` script and the appropriate toolchain
 will be downloaded and immediately ready for use. This is the option most people
 should use.
+
+#### Build from source
+
+TBD
+
+### macOS
+
+#### Preamble
+
+If you are building SAMEthing for macOS distribution or building the toolchain
+from source and do not have C/C++ development libraries and headers installed,
+executing the `toolchain_build.sh` script with `--autoinstalldeps` will handle
+this for you.
+
+These instructions do not have to be followed if building for bare-metal
+targets; the toolchain provides custom C/C++ development libraries and headers.

@@ -25,11 +25,18 @@
 
 #pragma once
 
+#ifdef __cplusplus
+#define SAMETHING_RESTRICT
+#else
+#define SAMETHING_RESTRICT restrict
+#endif // __cplusplus
+
 #ifdef __clang__
 #define SAMETHING_UNREACHABLE __builtin_unreachable()
 #define SAMETHING_ALWAYS_INLINE inline __attribute__((always_inline))
 #else
 #define SAMETHING_UNREACHABLE
+#define SAMETHING_ALWAYS_INLINE
 #endif  // __clang__
 
 #endif  // SAMETHING_COMPILER_H
