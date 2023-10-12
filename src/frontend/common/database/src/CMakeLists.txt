@@ -24,7 +24,7 @@ set(SRCS_PRIVATE private/database.c private/ini.c)
 set(HDRS_PRIVATE private/ini.h)
 set(HDRS_PUBLIC public/samething/frontend/database.h)
 
-add_library(SAMEthingDatabase OBJECT ${SRCS_PRIVATE}
+add_library(SAMEthingDatabase STATIC ${SRCS_PRIVATE}
                                      ${HDRS_PUBLIC}
                                      ${HDRS_PRIVATE})
 

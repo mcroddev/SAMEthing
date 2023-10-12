@@ -58,3 +58,8 @@ target_link_libraries(SAMEthingQt PRIVATE Qt6::Widgets
 set_target_properties(SAMEthingQt PROPERTIES
                       WIN32_EXECUTABLE ON
                       MACOSX_BUNDLE ON)
+
+add_custom_command(TARGET SAMEthingQt POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/src/frontend/dist/
+                   $<TARGET_FILE_DIR:SAMEthingQt>)

@@ -97,21 +97,18 @@ void SAMEthingApp::LocationCodeEditorPopulateFields() noexcept {
 }
 
 void SAMEthingApp::DatabaseLoad() noexcept {
-  QFile database_file("samething_db.txt");
+  const QString file_name = QString("db_%1.ini").arg(QLocale::system().name());
+  QFile database_file(file_name);
 
   if (!database_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
     const QString error_str =
-        QString("Unable to load the database file samething_db.txt: %1.")
-            .arg(database_file.errorString());
+        QString("Unable to load the database file %1: %2.")
+            .arg(file_name, database_file.errorString());
 
     QMessageBox::critical(nullptr, tr("Database read error"), error_str);
     return;
   }
 
-  QTextStream stream(&database_file);
-
-  // This function is called by samething_db_read() to read another line of the
-  // file.
   constexpr auto line_read_func = [](char* str, int num,
                                      void* stream) noexcept -> char* {
     auto* reader = static_cast<QTextStream*>(stream);
@@ -120,12 +117,14 @@ void SAMEthingApp::DatabaseLoad() noexcept {
       // No more lines to read; we're done.
       return nullptr;
     }
+    std::memset(str, 0, num);
 
-    const char* const line = reader->readLine(num).toUtf8().constData();
-    std::memcpy(str, line, num);
-
+    const QString line = reader->readLine(num);
+    std::memcpy(str, line.toUtf8().constData(), line.length());
     return str;
   };
+
+  QTextStream stream(&database_file);
 
   if (!samething_db_read(&model_db_, line_read_func, &stream)) {
     // QMessageBox::critical(nullptr, tr("Database parse error"), error_str);
@@ -202,22 +201,20 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
   header.attn_sig_duration =
       main_window_controller_.AttentionSignalDurationGet();
 
-  const char* const callsign =
-      main_window_controller_.CallsignGet().toUtf8().constData();
-  std::memcpy(header.id, callsign, SAMETHING_CORE_ID_LEN_MAX);
+  std::memcpy(header.id,
+              main_window_controller_.CallsignGet().toUtf8().constData(),
+              SAMETHING_CORE_ID_LEN_MAX);
 
-  const char* const valid_time_period =
-      main_window_controller_.ValidTimePeriodGet().toUtf8().constData();
-  std::memcpy(header.valid_time_period, valid_time_period,
+  std::memcpy(header.valid_time_period,
+              main_window_controller_.ValidTimePeriodGet().toUtf8().constData(),
               SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
 
   const int org_code = main_window_controller_.OriginatorCodeGet();
   std::memcpy(header.originator_code, model_db_.org_code.entries[org_code].code,
               SAMETHING_DB_ORG_CODE_LEN_MAX);
 
-  const char* const org_time =
-      main_window_controller_.OriginatorTimeGet().toUtf8().constData();
-  std::memcpy(header.originator_time, org_time,
+  std::memcpy(header.originator_time,
+              main_window_controller_.OriginatorTimeGet().toUtf8().constData(),
               SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX);
 
   const int event_code = main_window_controller_.EventCodeGet();
@@ -257,9 +254,6 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
 }
 
 void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
-  const char* const name =
-      main_window_controller_.SelectedAudioDeviceNameGet().toUtf8().constData();
-
   samething_audio_spec spec = {};
   spec.format = SAMETHING_AUDIO_FORMAT_S16;
   spec.sample_rate = SAMETHING_CORE_SAMPLE_RATE;
@@ -267,7 +261,11 @@ void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
 
   samething_audio_device dev = {};
 
-  if (!samething_audio_open_device(name, &dev, &spec)) {
+  if (!samething_audio_open_device(
+          main_window_controller_.SelectedAudioDeviceNameGet()
+              .toUtf8()
+              .constData(),
+          &dev, &spec)) {
     // Error!
     return;
   }

@@ -23,8 +23,7 @@
 set(SRCS_PRIVATE private/core.c)
 set(HDRS_PUBLIC public/samething/core.h)
 
-# We compile the core as object files to allow for link-time optimization.
-add_library(SAMEthingCore OBJECT ${SRCS_PRIVATE} ${HDRS_PUBLIC})
+add_library(SAMEthingCore STATIC ${SRCS_PRIVATE} ${HDRS_PUBLIC})
 
 # Allow targets which link with this library to gain access to the public header
 # files.
