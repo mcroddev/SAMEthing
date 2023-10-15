@@ -99,73 +99,69 @@ SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_field_add(
 
 SAMETHING_STATIC void samething_core_afsk_gen(
     struct samething_core_gen_ctx *const ctx, const uint8_t *const data,
-    const size_t data_size, size_t num_samples) {
+    const size_t data_size, const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
   SAMETHING_ASSERT(data != NULL);
   SAMETHING_ASSERT(data_size > 0);
-  SAMETHING_ASSERT(num_samples > 0);
 
-  size_t sample_cnt = 0;
+  // ~9.50% of time in this function is spent on this operation.
+  const float freq = ((data[ctx->afsk.data_pos] >> ctx->afsk.bit_pos) & 1)
+                         ? SAMETHING_CORE_AFSK_MARK_FREQ
+                         : SAMETHING_CORE_AFSK_SPACE_FREQ;
 
-  while (num_samples--) {
-    const float freq = ((data[ctx->afsk.data_pos] >> ctx->afsk.bit_pos) & 1)
-                           ? SAMETHING_CORE_AFSK_MARK_FREQ
-                           : SAMETHING_CORE_AFSK_SPACE_FREQ;
+  const float t =
+      (float)ctx->afsk.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-    const float t = ctx->afsk.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
+  const int16_t sample = sinf(M_PI * 2 * t * freq) * INT16_MAX;
+  ctx->sample_data[sample_pos] = sample;
 
-    const int16_t sample = sinf(M_PI * 2 * t * freq) * INT16_MAX;
-    ctx->sample_data[sample_cnt++] = sample;
+  ctx->afsk.sample_num++;
 
-    ctx->afsk.sample_num++;
+  if (ctx->afsk.sample_num >=
+      (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
+    ctx->afsk.sample_num = 0;
+    ctx->afsk.bit_pos++;
 
-    if (ctx->afsk.sample_num >= SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
-      ctx->afsk.sample_num = 0;
-      ctx->afsk.bit_pos++;
+    if (ctx->afsk.bit_pos >= SAMETHING_CORE_AFSK_BITS_PER_CHAR) {
+      ctx->afsk.bit_pos = 0;
+      ctx->afsk.data_pos++;
 
-      if (ctx->afsk.bit_pos >= SAMETHING_CORE_AFSK_BITS_PER_CHAR) {
-        ctx->afsk.bit_pos = 0;
-        ctx->afsk.data_pos++;
-
-        if (ctx->afsk.data_pos >= data_size) {
-          ctx->afsk.data_pos = 0;
-        }
+      if (ctx->afsk.data_pos >= data_size) {
+        // By the time we get here, we're completely done caring about the AFSK
+        // state for the current state; clear it to prepare for the next one.
+        memset(&ctx->afsk, 0, sizeof(ctx->afsk));
       }
     }
   }
 }
 
-SAMETHING_STATIC
-void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
-                                size_t num_samples) {
+SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_silence_gen(
+    struct samething_core_gen_ctx *const ctx, const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
-  SAMETHING_ASSERT(num_samples > 0);
-
-  while (num_samples--) {
-    ctx->sample_data[num_samples] = 0;
-  }
+  ctx->sample_data[sample_pos] = 0;
 }
 
-SAMETHING_STATIC void samething_core_attn_sig_gen(
-    struct samething_core_gen_ctx *const ctx, size_t num_samples) {
+SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_attn_sig_gen(
+    struct samething_core_gen_ctx *const ctx, const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
-  SAMETHING_ASSERT(num_samples > 0);
 
-  size_t sample_cnt = 0;
+  // Most of the bottlenecks are in this function.
 
-  while (num_samples--) {
-    const float t =
-        ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
-    const float calc = M_PI * 2 * t;
+  const float t = ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-    const int16_t sample =
-        (sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t) +
-         sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t)) *
-        INT16_MAX;
+  // ~8.24% of time in this function is spent on this operation.
+  const float calc = M_PI * 2 * t;
 
-    ctx->sample_data[sample_cnt++] = sample;
-    ctx->attn_sig_sample_num++;
-  }
+  // ~48.91% of time in this function is spent on this operation.
+  const int16_t sample =
+      (sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t) +
+       sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t)) *
+      INT16_MAX;
+
+  // ~8.11% of time in this function is spent on this operation, which is
+  // surprisingly bad.
+  ctx->sample_data[sample_pos] = sample;
+  ctx->attn_sig_sample_num++;
 }
 
 void samething_core_ctx_config(
@@ -252,13 +248,15 @@ void samething_core_ctx_config(
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD] =
-      SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
-      ctx->header_size;
+  SAMETHING_CORE_AFSK_BITS_PER_CHAR *
+  (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
+  ctx->header_size;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_THIRD] =
-  SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
+  SAMETHING_CORE_AFSK_BITS_PER_CHAR *
+  (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
   SAMETHING_CORE_EOM_HEADER_SIZE;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_FIRST] =
@@ -271,7 +269,7 @@ void samething_core_ctx_config(
   SAMETHING_CORE_SILENCE_DURATION * SAMETHING_CORE_SAMPLE_RATE;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_ATTENTION_SIGNAL] =
-  header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
+  (unsigned int)header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
 
   // clang-format on
 }
@@ -307,20 +305,14 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
   SAMETHING_ASSERT(ctx->seq_state < SAMETHING_CORE_SEQ_STATE_NUM);
 
   // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX samples at a time.
-  for (unsigned int sample_count = 0;
-       sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;) {
-    unsigned int num_samples = ctx->seq_samples_remaining[ctx->seq_state];
-
-    if (num_samples >= SAMETHING_CORE_SAMPLES_NUM_MAX) {
-      num_samples = SAMETHING_CORE_SAMPLES_NUM_MAX;
-    }
-
+  for (int sample_count = 0; sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;
+       ++sample_count) {
     switch (ctx->seq_state) {
       case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST:
       case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND:
       case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD:
         samething_core_afsk_gen(ctx, ctx->header_data, ctx->header_size,
-                                num_samples);
+                                sample_count);
         break;
 
       case SAMETHING_CORE_SEQ_STATE_SILENCE_FIRST:
@@ -330,26 +322,25 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
       case SAMETHING_CORE_SEQ_STATE_SILENCE_FIFTH:
       case SAMETHING_CORE_SEQ_STATE_SILENCE_SIXTH:
       case SAMETHING_CORE_SEQ_STATE_SILENCE_SEVENTH:
-        samething_core_silence_gen(ctx, num_samples);
+        samething_core_silence_gen(ctx, sample_count);
         break;
 
       case SAMETHING_CORE_SEQ_STATE_ATTENTION_SIGNAL:
-        samething_core_attn_sig_gen(ctx, num_samples);
+        samething_core_attn_sig_gen(ctx, sample_count);
         break;
 
       case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST:
       case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND:
       case SAMETHING_CORE_SEQ_STATE_AFSK_EOM_THIRD:
         samething_core_afsk_gen(ctx, SAMETHING_CORE_EOM_HEADER,
-                                SAMETHING_CORE_EOM_HEADER_SIZE, num_samples);
+                                SAMETHING_CORE_EOM_HEADER_SIZE, sample_count);
         break;
 
       default:
         SAMETHING_UNREACHABLE;
         break;
     }
-    ctx->seq_samples_remaining[ctx->seq_state] -= num_samples;
-    sample_count += num_samples;
+    ctx->seq_samples_remaining[ctx->seq_state]--;
 
     if (ctx->seq_samples_remaining[ctx->seq_state] == 0) {
       ctx->seq_state++;

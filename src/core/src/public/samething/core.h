@@ -103,8 +103,9 @@ extern "C" {
 #define SAMETHING_CORE_AFSK_SPACE_FREQ (1562.5F)
 
 /// How many samples should we generate for each bit?
+/// XXX: Rounding up is *required*.
 #define SAMETHING_CORE_AFSK_SAMPLES_PER_BIT \
-  (SAMETHING_CORE_AFSK_BIT_DURATION * SAMETHING_CORE_SAMPLE_RATE)
+  ((SAMETHING_CORE_AFSK_BIT_DURATION * SAMETHING_CORE_SAMPLE_RATE) + 1)
 
 /// How many bits per character?
 #define SAMETHING_CORE_AFSK_BITS_PER_CHAR (8)
@@ -239,7 +240,7 @@ struct samething_core_gen_ctx {
 /// @param num_samples The number of samples to generate.
 void samething_core_afsk_gen(struct samething_core_gen_ctx *const ctx,
                              const uint8_t *const data, const size_t data_size,
-                             size_t num_samples);
+                             const size_t sample_pos);
 
 /// Generates silence for a period of 1 second.
 ///
@@ -247,7 +248,7 @@ void samething_core_afsk_gen(struct samething_core_gen_ctx *const ctx,
 ///            generation.
 /// @param num_samples The number of samples to generate.
 void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
-                                size_t num_samples);
+                                const size_t sample_pos);
 
 /// Generates the attention signal.
 ///
@@ -255,7 +256,7 @@ void samething_core_silence_gen(struct samething_core_gen_ctx *const ctx,
 ///            generation.
 /// @param num_samples The number of samples to generate.
 void samething_core_attn_sig_gen(struct samething_core_gen_ctx *const ctx,
-                                 size_t num_samples);
+                                 const size_t sample_pos);
 
 /// Adds a field to the data.
 ///

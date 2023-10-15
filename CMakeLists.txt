@@ -99,7 +99,7 @@ function(samething_build_settings_c_configure)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       target_compile_options(samething-build-settings-c INTERFACE -glldb -O1)
-    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
       target_compile_options(samething-build-settings-c INTERFACE -Ofast)
     else()
       message(FATAL_ERROR "Unable to set project wide build settings for C "
@@ -146,7 +146,7 @@ function(samething_build_settings_cpp_configure)
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
       target_compile_options(samething-build-settings-cpp INTERFACE -glldb -O1)
-    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
       target_compile_options(samething-build-settings-cpp INTERFACE -Ofast)
     else()
       message(FATAL_ERROR "Unable to set project wide build settings for C++ "
