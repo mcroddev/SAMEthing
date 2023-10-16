@@ -30,10 +30,10 @@
 MainWindowController::MainWindowController() noexcept {
   ui_.setupUi(this);
 
-  ui_.attn_sig_duration_->setMinimum(SAMETHING_CORE_ATTN_SIG_MIN);
-  ui_.attn_sig_duration_->setMaximum(SAMETHING_CORE_ATTN_SIG_MAX);
+  ui_.attn_sig_duration_->setMinimum(SAMETHING_CORE_ATTN_SIG_DURATION_MIN);
+  ui_.attn_sig_duration_->setMaximum(SAMETHING_CORE_ATTN_SIG_DURATION_MAX);
 
-  ui_.callsign_->setMaxLength(SAMETHING_CORE_ID_LEN_MAX);
+  ui_.callsign_->setMaxLength(SAMETHING_CORE_CALLSIGN_LEN);
   ui_.callsign_->setValidator(&callsign_validator_);
 
   // Set the default originator time to be the current time to avoid the default
@@ -110,10 +110,10 @@ void MainWindowController::SignalsConnectToSlots() noexcept {
   QString callsign = ui_.callsign_->text().toUpper();
   qsizetype callsign_len = callsign.length();
 
-  if (!callsign.isEmpty() && callsign_len < SAMETHING_CORE_ID_LEN_MAX) {
-    callsign_len = SAMETHING_CORE_ID_LEN_MAX - callsign_len;
+  if (!callsign.isEmpty() && callsign_len < SAMETHING_CORE_CALLSIGN_LEN) {
+    callsign_len = SAMETHING_CORE_CALLSIGN_LEN - callsign_len;
 
-    while (callsign_len--) {
+    while (callsign_len-- > 0) {
       callsign += ' ';
     }
   }

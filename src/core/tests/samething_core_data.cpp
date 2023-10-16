@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "samething/core.h"
 #include "gtest/gtest.h"
+#include "samething/core.h"
 
 /// These test cases verify that the data values being used are consistent with
 /// the latest version of the EAS protocol as defined by 47 CFR 11.31, which
@@ -44,38 +44,38 @@ TEST(samething_core_data, PreambleIsCorrect) {
 
 /// Ensures that the maximum length of the originator code is 3.
 TEST(samething_core_data, OriginatorCodeLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_CODE_LEN_MAX, 3);
+  EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_CODE_LEN, 3);
 }
 
 /// Ensures that the maximum number of characters for the event code is 3.
 TEST(samething_core_data, EventCodeLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_EVENT_CODE_LEN_MAX, 3);
+  EXPECT_EQ(SAMETHING_CORE_EVENT_CODE_LEN, 3);
 }
 
 /// Ensures that the maximum number of location codes is 31.
 TEST(samething_core_data, LocationCodesNumMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_LOCATION_CODE_NUM_MAX, 31);
+  EXPECT_EQ(SAMETHING_CORE_LOCATION_CODES_NUM_MAX, 31);
 }
 
 /// Ensures that the maximum number of characters for the location code is 6.
 TEST(samething_core_data, LocationCodeLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_LOCATION_CODE_LEN_MAX, 6);
+  EXPECT_EQ(SAMETHING_CORE_LOCATION_CODE_LEN, 6);
 }
 
 /// Ensures that the maximum number of characters for a valid time period is 4.
 TEST(samething_core_data, ValidTimePeriodLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX, 4);
+  EXPECT_EQ(SAMETHING_CORE_VALID_TIME_PERIOD_LEN, 4);
 }
 
 /// Ensures that the maximum number of characters for the originator time is 7.
 TEST(samething_core_data, OriginatorTimeLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX, 7);
+  EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_TIME_LEN, 7);
 }
 
 /// Ensures that the maximum number of characters for the identification code is
 /// 8.
-TEST(samething_core_data, IDLenMaxIsCorrect) {
-  EXPECT_EQ(SAMETHING_CORE_ID_LEN_MAX, 8);
+TEST(samething_core_data, CallsignLenMaxIsCorrect) {
+  EXPECT_EQ(SAMETHING_CORE_CALLSIGN_LEN, 8);
 }
 
 /// Ensures that the End of Message (EOM) header size is correct.
@@ -124,9 +124,9 @@ TEST(samething_core_data, AttnSigFreqSecondIsCorrect) {
 }
 
 TEST(samething_core_data, AttnSigMinLenIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_MIN, 8.F);
+  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MIN, 8.F);
 }
 
 TEST(samething_core_data, AttnSigMaxLenIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_MAX, 25.F);
+  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MAX, 25.F);
 }

@@ -20,22 +20,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/** \file compiler.h
+ * Defines the compiler abstraction facilities of SAMEthingCore.
+ */
+
 #ifndef SAMETHING_COMPILER_H
 #define SAMETHING_COMPILER_H
 
 #pragma once
 
-#ifdef __cplusplus
-#define SAMETHING_RESTRICT
-#else
-#define SAMETHING_RESTRICT restrict
-#endif // __cplusplus
-
 #ifdef __clang__
+/// Inform the compiler that anything past the current scope is unreachable.
 #define SAMETHING_UNREACHABLE __builtin_unreachable()
+
+/// Forcibly performs inline expansion of a function.
 #define SAMETHING_ALWAYS_INLINE inline __attribute__((always_inline))
 #else
+/// Inform the compiler that anything past the current scope is unreachable.
 #define SAMETHING_UNREACHABLE
+
+/// Forcibly performs inline expansion of a function.
 #define SAMETHING_ALWAYS_INLINE
 #endif  // __clang__
 

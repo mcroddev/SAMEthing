@@ -19,35 +19,3 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
-#include "samething/core.h"
-#include "gtest/gtest.h"
-
-extern "C" void *samething_dbg_userdata_ = nullptr;
-
-extern "C" void samething_dbg_assert_failed(const char *const,
-                                            const char *const, const int,
-                                            void *) {
-  std::abort();
-}
-
-TEST(samething_core_silence_gen, GeneratesFullChunkOfSilence) {
-  struct samething_core_gen_ctx ctx = {};
-
-  std::srand(std::time(nullptr));
-
-  // Fill the sample data with garbage to ensure that the data is not already 0.
-  for (size_t i = 0; i < SAMETHING_CORE_SAMPLES_NUM_MAX; ++i) {
-    ctx.sample_data[i] = std::rand() % 333;
-  }
-
-  // Essentially, this just zeroes out the chunk.
-  for (size_t i = 0; i < SAMETHING_CORE_SAMPLES_NUM_MAX; ++i) {
-    samething_core_silence_gen(&ctx, i);
-  }
-
-  // Check to see if the chunk is entirely 0.
-  for (size_t i = 0; i < SAMETHING_CORE_SAMPLES_NUM_MAX; ++i) {
-    EXPECT_EQ(ctx.sample_data[i], 0);
-  }
-}

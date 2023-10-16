@@ -20,61 +20,70 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// A few points to make note of here:
-//
-// * The sample rate is fixed to 44100Hz. There appears to be no good reason to
-//   go above or below that value. Unfortunately, an authoritative answer is not
-//   defined in the specification.
-//
-// * Single-precision floating point is enforced; double precision is not
-//   necessary and many embedded systems do not have double precision FPUs.
-//   Using double-precision in such a case for which it is already unnecessary
-//   would lead to an increase in code size and a performance penalty as the
-//   compiler would then have to pull in soft-float routines.
-//
-// * Dynamic memory allocation is forbidden; all sizes are fixed and all the
-//   upper bounds are known at compile-time.
-//
-// * The maximum number of samples that can be generated begins with the
-//   following premises:
-//
-//     a) The sample rate is 44100Hz.
-//
-//     b) There are 7 periods of silence, each lasting 1 second: 3 after each
-//        message transmission, 1 after the attention signal, and 3 more after
-//        each End of Message (EOM) transmission.
-//
-//     c) There is a maximum of 252 bytes that can be transmitted during an AFSK
-//        burst, which occurs 3 times.
-//
-//     d) There is a maximum of 20 bytes that can be transmitted during an AFSK
-//        burst for the End of Message (EOM) transmission, which occurs 3 times.
-//
-//     e) There are a total of 6 burst transmissions; 3 for the message portion,
-//        and 3 for the EOM portion.
-//
-//     f) The maximum amount of time an attention signal can last for is 25
-//        seconds.
-//
-//     These axioms give us the following calculations:
-//
-//     8 bits/char * 84 samples/bit * 252 bytes * 3 bursts = + 508,032 samples
-//     7 seconds * 44,100                                  = + 308,700 samples
-//     25 seconds * 44,100                                 = + 1,102,500 samples
-//     8 bits/char * 84 samples/bit * 20 bytes * 3 bursts  = + 40,320 samples
-//                                                           = 1,959,552 samples
-//                                                             -----------------
-//
-//     Since we use a signed 16-bit integer type to store the sample data, the
-//     amount of space required is (2 bytes * 1,959,552 samples) = 3,919,104
-//     bytes, or ~4 MB.
-//
-//     It is not practical to use such a large value on the stack on most
-//     embedded targets, and even on traditional desktop systems this would
-//     still be dangerous. Since dynamic memory allocation is off the table, the
-//     solution is to generate chunks of audio samples and then push them to
-//     the audio device incrementally. In our case, we choose to generate 4,096
-//     samples at a time.
+/** \file core.c
+ * Defines the implementation logic of SAME header generation.
+ *
+ * The sample rate is fixed at 44100Hz. There appears to be no good reason to
+ * go above or below that value. Unfortunately, an authoritative answer is
+ * not defined in the specification. Experimentation with various different
+ * decoders has not shown any problems.
+ *
+ * Single-precision floating point is enforced; double-precision is not
+ * necessary, and many embedded systems do not have double precision FPUs.
+ * Using double-precision in a case for which it is already unnecessary would
+ * lead to an increase in code size as the compiler would then have to pull in
+ * soft-float routines in addition to incurring a performance penalty.
+ *
+ * Dynamic memory allocation is forbidden; all sizes are fixed, and all the
+ * upper bounds are known at compile time.
+ *
+ * The maximum number of samples that can be generated is defined by the
+ * following premises:
+ *
+ *     * The sample rate is 44100 Hz.
+ *
+ *     * There are 7 periods of silence, each lasting 1 second: 1 after each
+ *       message transmission (there are 3), 1 after the attention signal, and 1
+ *       after each End of Message (EOM) transmission (there are 3).
+ *
+ *     * There is a maximum of 252 bytes that can be transmitted during an AFSK
+ *       burst, which occurs three times.
+ *
+ *     * The End of Message (EOM) transmission is 20 bytes, which occurs three
+ *       times.
+ *
+ *     * There are a total of 6 burst transmissions; 3 for the message portion,
+ *       and 3 for the EOM portion.
+ *
+ *     * The maximum amount of time an attention signal can last for is 25
+ *       seconds.
+ *
+ *     * The duration of each bit is 1.92ms, and we must produce 520.83 bits per
+ *       second. This gives us a calculation of ((1.0F / 520.83F) * 44100U)
+ *       which gives us 84.672539. However, the value needs to be rounded UP to
+ *       85.
+ *
+ *     * There are 8 bits in a character.
+ *
+ * These axioms give us the following calculations:
+ *
+ *     8 bits/char * 85 samples/bit * 252 bytes * 3 bursts = + 514,080 samples
+ *     7 seconds * 44,100                                  = + 308,700 samples
+ *     25 seconds * 44,100                                 = + 1,102,500 samples
+ *     8 bits/char * 85 samples/bit * 20 bytes * 3 bursts  = + 40,800 samples
+ *                                                           = 1,966,080 samples
+ *                                                             -----------------
+ *
+ * Since we use a 16-bit integer type to store the sample data, the amount of
+ * space required is (2 bytes * 1,966,080 samples) = **3,932,160 bytes, or
+ * ~4 MB.**
+ *
+ * It is not practical to use such a large value on the stack on most embedded
+ * targets, and even on traditional desktop systems this would still be
+ * dangerous. Since dynamic memory allocation is off the table, the solution is
+ * to generate chunks of audio samples and then push them to the audio device
+ * incrementally. In our case, we choose to generate 4,096 samples at a time.
+ */
 
 #include "samething/core.h"
 
@@ -85,8 +94,8 @@
 #include "samething/debug.h"
 
 SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_field_add(
-    uint8_t *const data, size_t *data_size, const char *const field,
-    const size_t field_len) {
+    uint8_t *const restrict data, size_t *restrict data_size,
+    const char *restrict const field, const size_t field_len) {
   SAMETHING_ASSERT(data != NULL);
   SAMETHING_ASSERT(data_size != NULL);
   SAMETHING_ASSERT(field != NULL);
@@ -98,8 +107,9 @@ SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_field_add(
 }
 
 SAMETHING_STATIC void samething_core_afsk_gen(
-    struct samething_core_gen_ctx *const ctx, const uint8_t *const data,
-    const size_t data_size, const size_t sample_pos) {
+    struct samething_core_gen_ctx *const restrict ctx,
+    const uint8_t *const restrict data, const size_t data_size,
+    const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
   SAMETHING_ASSERT(data != NULL);
   SAMETHING_ASSERT(data_size > 0);
@@ -117,8 +127,7 @@ SAMETHING_STATIC void samething_core_afsk_gen(
 
   ctx->afsk.sample_num++;
 
-  if (ctx->afsk.sample_num >=
-      (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
+  if (ctx->afsk.sample_num >= SAMETHING_CORE_AFSK_SAMPLES_PER_BIT) {
     ctx->afsk.sample_num = 0;
     ctx->afsk.bit_pos++;
 
@@ -136,37 +145,40 @@ SAMETHING_STATIC void samething_core_afsk_gen(
 }
 
 SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_silence_gen(
-    struct samething_core_gen_ctx *const ctx, const size_t sample_pos) {
+    struct samething_core_gen_ctx *const restrict ctx,
+    const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
   ctx->sample_data[sample_pos] = 0;
 }
 
 SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_attn_sig_gen(
-    struct samething_core_gen_ctx *const ctx, const size_t sample_pos) {
+    struct samething_core_gen_ctx *const restrict ctx,
+    const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
 
   // Most of the bottlenecks are in this function.
 
-  const float t = ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
+  const float t =
+      (float)ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
   // ~8.24% of time in this function is spent on this operation.
   const float calc = M_PI * 2 * t;
 
-  // ~48.91% of time in this function is spent on this operation.
-  const int16_t sample =
-      (sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t) +
-       sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t)) *
-      INT16_MAX;
+  const float first_freq =
+      sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t);
+
+  const float second_freq =
+      sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t);
 
   // ~8.11% of time in this function is spent on this operation, which is
   // surprisingly bad.
-  ctx->sample_data[sample_pos] = sample;
+  ctx->sample_data[sample_pos] = (first_freq + second_freq) * INT16_MAX;
   ctx->attn_sig_sample_num++;
 }
 
-void samething_core_ctx_config(
-    struct samething_core_gen_ctx *const ctx,
-    const struct samething_core_header *const header) {
+void samething_core_ctx_init(
+    struct samething_core_gen_ctx *const restrict ctx,
+    const struct samething_core_header *const restrict header) {
   SAMETHING_ASSERT(ctx != NULL);
   SAMETHING_ASSERT(header != NULL);
 
@@ -211,52 +223,49 @@ void samething_core_ctx_config(
          sizeof(SAMETHING_CORE_INITIAL_HEADER));
 
   // We want to start populating the fields after the first dash.
-  ctx->header_size = 21;
+  ctx->header_size =
+      SAMETHING_CORE_PREAMBLE_NUM + SAMETHING_CORE_ASCII_ID_LEN + 1;
 
   samething_core_field_add(ctx->header_data, &ctx->header_size,
                            header->originator_code,
-                           SAMETHING_CORE_ORIGINATOR_CODE_LEN_MAX);
+                           SAMETHING_CORE_ORIGINATOR_CODE_LEN);
   samething_core_field_add(ctx->header_data, &ctx->header_size,
-                           header->event_code,
-                           SAMETHING_CORE_EVENT_CODE_LEN_MAX);
+                           header->event_code, SAMETHING_CORE_EVENT_CODE_LEN);
 
-  for (size_t i = 0; i < SAMETHING_CORE_LOCATION_CODE_NUM_MAX; ++i) {
+  for (size_t i = 0; i < SAMETHING_CORE_LOCATION_CODES_NUM_MAX; ++i) {
     if (memcmp(header->location_codes[i],
                SAMETHING_CORE_LOCATION_CODE_END_MARKER,
-               SAMETHING_CORE_LOCATION_CODE_LEN_MAX) == 0) {
+               SAMETHING_CORE_LOCATION_CODE_LEN) == 0) {
       break;
     }
     samething_core_field_add(ctx->header_data, &ctx->header_size,
                              header->location_codes[i],
-                             SAMETHING_CORE_LOCATION_CODE_LEN_MAX);
+                             SAMETHING_CORE_LOCATION_CODE_LEN);
   }
   ctx->header_data[ctx->header_size - 1] = '+';
 
   samething_core_field_add(ctx->header_data, &ctx->header_size,
                            header->valid_time_period,
-                           SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
+                           SAMETHING_CORE_VALID_TIME_PERIOD_LEN);
 
   samething_core_field_add(ctx->header_data, &ctx->header_size,
                            header->originator_time,
-                           SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX);
+                           SAMETHING_CORE_ORIGINATOR_TIME_LEN);
 
-  samething_core_field_add(ctx->header_data, &ctx->header_size, header->id,
-                           SAMETHING_CORE_ID_LEN_MAX);
+  samething_core_field_add(ctx->header_data, &ctx->header_size,
+                           header->callsign, SAMETHING_CORE_CALLSIGN_LEN);
 
   // clang-format off
-
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD] =
-  SAMETHING_CORE_AFSK_BITS_PER_CHAR *
-  (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
+  SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
   ctx->header_size;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_THIRD] =
-  SAMETHING_CORE_AFSK_BITS_PER_CHAR *
-  (unsigned int)SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
+  SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
   SAMETHING_CORE_EOM_HEADER_SIZE;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_SILENCE_FIRST] =
@@ -269,8 +278,7 @@ void samething_core_ctx_config(
   SAMETHING_CORE_SILENCE_DURATION * SAMETHING_CORE_SAMPLE_RATE;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_ATTENTION_SIGNAL] =
-  (unsigned int)header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
-
+  header->attn_sig_duration * SAMETHING_CORE_SAMPLE_RATE;
   // clang-format on
 }
 
@@ -305,8 +313,8 @@ void samething_core_samples_gen(struct samething_core_gen_ctx *const ctx) {
   SAMETHING_ASSERT(ctx->seq_state < SAMETHING_CORE_SEQ_STATE_NUM);
 
   // Generate only SAMETHING_CORE_SAMPLES_NUM_MAX samples at a time.
-  for (int sample_count = 0; sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX;
-       ++sample_count) {
+  for (unsigned int sample_count = 0;
+       sample_count < SAMETHING_CORE_SAMPLES_NUM_MAX; ++sample_count) {
     switch (ctx->seq_state) {
       case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_FIRST:
       case SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND:

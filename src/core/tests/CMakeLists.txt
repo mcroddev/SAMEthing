@@ -30,7 +30,7 @@ samething_test_add(samething_core_attn_sig_gen samething_core_attn_sig_gen.cpp
                    SAMEthingCore)
 
 samething_test_add(samething_core_data samething_core_data.cpp SAMEthingCore)
-samething_test_add(samething_core_gen samething_core_gen.cpp SAMEthingCore)
+samething_test_add(samething_core_gen samething_core_samples_gen.cpp SAMEthingCore)
 
 samething_test_add(samething_core_silence_gen samething_core_silence_gen.cpp
                    SAMEthingCore)

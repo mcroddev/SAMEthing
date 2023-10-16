@@ -201,13 +201,13 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
   header.attn_sig_duration =
       main_window_controller_.AttentionSignalDurationGet();
 
-  std::memcpy(header.id,
+  std::memcpy(header.callsign,
               main_window_controller_.CallsignGet().toUtf8().constData(),
-              SAMETHING_CORE_ID_LEN_MAX);
+              SAMETHING_CORE_CALLSIGN_LEN);
 
   std::memcpy(header.valid_time_period,
               main_window_controller_.ValidTimePeriodGet().toUtf8().constData(),
-              SAMETHING_CORE_VALID_TIME_PERIOD_LEN_MAX);
+              SAMETHING_CORE_VALID_TIME_PERIOD_LEN);
 
   const int org_code = main_window_controller_.OriginatorCodeGet();
   std::memcpy(header.originator_code, model_db_.org_code.entries[org_code].code,
@@ -215,7 +215,7 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
 
   std::memcpy(header.originator_time,
               main_window_controller_.OriginatorTimeGet().toUtf8().constData(),
-              SAMETHING_CORE_ORIGINATOR_TIME_LEN_MAX);
+              SAMETHING_CORE_ORIGINATOR_TIME_LEN);
 
   const int event_code = main_window_controller_.EventCodeGet();
   std::memcpy(header.event_code, model_db_.event_code.entries[event_code].code,
@@ -250,7 +250,7 @@ void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
   }
   std::memcpy(&header.location_codes[loc_code],
               SAMETHING_CORE_LOCATION_CODE_END_MARKER,
-              SAMETHING_CORE_LOCATION_CODE_LEN_MAX);
+              SAMETHING_CORE_LOCATION_CODE_LEN);
 }
 
 void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
@@ -271,7 +271,7 @@ void SAMEthingApp::SAMEHeaderPlay(samething_core_header& header) noexcept {
   }
 
   samething_core_gen_ctx ctx = {};
-  samething_core_ctx_config(&ctx, &header);
+  samething_core_ctx_init(&ctx, &header);
 
   while (ctx.seq_state != SAMETHING_CORE_SEQ_STATE_NUM) {
     samething_core_samples_gen(&ctx);
