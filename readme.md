@@ -28,7 +28,7 @@ If you are under U.S. jurisdiction, please read
     - Single-precision floating point only
     - Consists of only 4 files
 
-* [Qt](https://qt.io) based GUI frontends for
+* [Qt](https://qt.io) based GUI frontend for
   [Windows](https://www.microsoft.com/en-us/windows?r=1),
   [macOS](https://www.apple.com/macos/), and
   [Linux](https://www.linux.org/) based systems.
