@@ -75,6 +75,17 @@
       }
     },
     {
+      "name": "Benchmarks",
+      "hidden": true,
+      "description": "Sets cache variables for benchmarking",
+      "cacheVariables": {
+        "SAMETHING_BUILD_BENCHMARKS": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
       "name": "QtFrontend",
       "hidden": true,
       "description": "Sets cache variables to compile the Qt frontend",
@@ -114,6 +125,16 @@
         "UnitTests"
       ],
       "binaryDir": "${sourceDir}/build/llvm-release-unit-tests"
+    },
+    {
+      "name": "UnixLLVMReleaseBenchmarks",
+      "displayName": "Build samething benchmarks in Release mode",
+      "inherits": [
+        "UnixLLVM",
+        "Release",
+        "Benchmarks"
+      ],
+      "binaryDir": "${sourceDir}/build/llvm-release-benchmarks"
     },
     {
       "name": "UnixLLVMReleaseQtFrontend",

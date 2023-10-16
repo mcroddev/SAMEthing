@@ -23,6 +23,7 @@
 #include "samething/core.h"
 #include "gtest/gtest.h"
 
+#ifdef SAMETHING_TESTING
 extern "C" void *samething_dbg_userdata_ = nullptr;
 
 extern "C" void samething_dbg_assert_failed(const char *const,
@@ -30,5 +31,6 @@ extern "C" void samething_dbg_assert_failed(const char *const,
                                             void *) {
   std::abort();
 }
+#endif // SAMETHING_TESTING
 
 TEST(samething_core_gen, HandlesOriginatorCode) {}

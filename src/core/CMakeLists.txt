@@ -23,7 +23,12 @@
 # First, compile the core itself.
 add_subdirectory(src)
 
-# Now, compile any tests if needed.
+# Compile the benchmarks if needed.
+if (SAMETHING_BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
+
+# Compile the tests if needed.
 if (SAMETHING_BUILD_TESTS)
   add_subdirectory(tests)
 endif()

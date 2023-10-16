@@ -101,6 +101,11 @@ function(samething_build_settings_c_configure)
       target_compile_options(samething-build-settings-c INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
       target_compile_options(samething-build-settings-c INTERFACE -Ofast)
+
+      if (SAMETHING_BUILD_BENCHMARKS)
+        target_compile_options(samething-build-settings-c INTERFACE
+                               -fno-omit-frame-pointer)
+      endif()
     else()
       message(FATAL_ERROR "Unable to set project wide build settings for C "
               "targets: the build type ${CMAKE_BUILD_TYPE} is "
@@ -148,6 +153,11 @@ function(samething_build_settings_cpp_configure)
       target_compile_options(samething-build-settings-cpp INTERFACE -glldb -O1)
     elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
       target_compile_options(samething-build-settings-cpp INTERFACE -Ofast)
+
+      if (SAMETHING_BUILD_BENCHMARKS)
+        target_compile_options(samething-build-settings-cpp INTERFACE
+                               -fno-omit-frame-pointer)
+      endif()
     else()
       message(FATAL_ERROR "Unable to set project wide build settings for C++ "
               "targets: the build type ${CMAKE_BUILD_TYPE} is "
@@ -162,6 +172,7 @@ endfunction()
 
 function(samething_options_handle)
   option(SAMETHING_BUILD_TESTS "Build the unit tests (enables sanitizers)" OFF)
+  option(SAMETHING_BUILD_BENCHMARKS "Build the benchmarks" OFF)
 
   option(SAMETHING_ENABLE_SANITIZERS
          "Enables the address sanitizer and the undefined behavior sanitizer"
