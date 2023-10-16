@@ -1,6 +1,6 @@
 # SAMEthing
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) <a href="https://scan.coverity.com/projects/mcroddev-samething"> <img alt="Coverity Scan Build Status" src="https://scan.coverity.com/projects/29231/badge.svg"/> </a>
 
 SAMEthing is a [Specific Area Message Encoding (SAME)](https://en.wikipedia.org/wiki/Specific_Area_Message_Encoding) header generator.
 
