@@ -93,13 +93,20 @@
 #include "samething/compiler.h"
 #include "samething/debug.h"
 
-SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_field_add(
-    uint8_t *const restrict data, size_t *restrict data_size,
-    const char *restrict const field, const size_t field_len) {
+#define SAMETHING_PI 3.141593F
+
+SAMETHING_STATIC void samething_core_field_add(uint8_t *const restrict data,
+                                               size_t *restrict data_size,
+                                               const char *restrict const field,
+                                               const size_t field_len) {
   SAMETHING_ASSERT(data != NULL);
   SAMETHING_ASSERT(data_size != NULL);
   SAMETHING_ASSERT(field != NULL);
   SAMETHING_ASSERT(field_len > 0);
+
+  // XXX: SAMETHING_CORE_CALLSIGN_LEN is the largest field, if this ever
+  // changes this must change as well.
+  SAMETHING_ASSERT(field_len <= SAMETHING_CORE_CALLSIGN_LEN);
 
   memcpy(&data[*data_size], field, field_len);
   *data_size += field_len;
@@ -122,7 +129,8 @@ SAMETHING_STATIC void samething_core_afsk_gen(
   const float t =
       (float)ctx->afsk.sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-  const int16_t sample = sinf(M_PI * 2 * t * freq) * INT16_MAX;
+  const int16_t sample =
+      (int16_t)(sinf(SAMETHING_PI * 2 * t * freq) * INT16_MAX);
   ctx->sample_data[sample_pos] = sample;
 
   ctx->afsk.sample_num++;
@@ -144,25 +152,22 @@ SAMETHING_STATIC void samething_core_afsk_gen(
   }
 }
 
-SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_silence_gen(
+SAMETHING_STATIC void samething_core_silence_gen(
     struct samething_core_gen_ctx *const restrict ctx,
     const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
   ctx->sample_data[sample_pos] = 0;
 }
 
-SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_attn_sig_gen(
+SAMETHING_STATIC void samething_core_attn_sig_gen(
     struct samething_core_gen_ctx *const restrict ctx,
     const size_t sample_pos) {
   SAMETHING_ASSERT(ctx != NULL);
 
-  // Most of the bottlenecks are in this function.
-
   const float t =
       (float)ctx->attn_sig_sample_num / (float)SAMETHING_CORE_SAMPLE_RATE;
 
-  // ~8.24% of time in this function is spent on this operation.
-  const float calc = M_PI * 2 * t;
+  const float calc = SAMETHING_PI * 2 * t;
 
   const float first_freq =
       sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_FIRST) / sizeof(int16_t);
@@ -170,9 +175,8 @@ SAMETHING_STATIC SAMETHING_ALWAYS_INLINE void samething_core_attn_sig_gen(
   const float second_freq =
       sinf(calc * SAMETHING_CORE_ATTN_SIG_FREQ_SECOND) / sizeof(int16_t);
 
-  // ~8.11% of time in this function is spent on this operation, which is
-  // surprisingly bad.
-  ctx->sample_data[sample_pos] = (first_freq + second_freq) * INT16_MAX;
+  ctx->sample_data[sample_pos] =
+      (int16_t)((first_freq + second_freq) * INT16_MAX);
   ctx->attn_sig_sample_num++;
 }
 
@@ -260,7 +264,7 @@ void samething_core_ctx_init(
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_SECOND] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_HEADER_THIRD] =
   SAMETHING_CORE_AFSK_BITS_PER_CHAR * SAMETHING_CORE_AFSK_SAMPLES_PER_BIT *
-  ctx->header_size;
+  (unsigned int)ctx->header_size;
 
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_FIRST] =
   ctx->seq_samples_remaining[SAMETHING_CORE_SEQ_STATE_AFSK_EOM_SECOND] =

@@ -22,13 +22,56 @@
 
 #include <cstring>
 
-#include "samething/core.h"
 #include "gtest/gtest.h"
+#include "samething/core.h"
 
+#ifndef NDEBUG
 extern "C" void *samething_dbg_userdata_ = nullptr;
 
-extern "C" void samething_dbg_assert_failed(const char *const,
-                                            const char *const, const int,
-                                            void *) {
+extern "C" [[noreturn]] void samething_dbg_assert_failed(const char *const,
+                                                         const char *const,
+                                                         const int, void *) {
   std::abort();
+}
+
+TEST(samething_core_field_add, AssertsWhenDataIsNULL) {
+  std::size_t x = 0;
+  EXPECT_DEATH({ samething_core_field_add(nullptr, &x, "TEST", 5); }, ".*");
+}
+
+TEST(samething_core_field_add, AssertsWhenDataSizeIsNULL) {
+  std::uint8_t x[10];
+  EXPECT_DEATH({ samething_core_field_add(x, nullptr, "TEST", 5); }, ".*");
+}
+
+TEST(samething_core_field_add, AssertsWhenFieldIsNULL) {
+  std::uint8_t x[10];
+  std::size_t size;
+
+  EXPECT_DEATH({ samething_core_field_add(x, &size, nullptr, 5); }, ".*");
+}
+
+TEST(samething_core_field_add, AssertsWhenFieldLenIsZero) {
+  std::uint8_t x[10];
+  std::size_t size;
+
+  EXPECT_DEATH({ samething_core_field_add(x, &size, "TEST", 0); }, ".*");
+}
+
+TEST(samething_core_field_add, AssertsWhenFieldLenExceedsLargest) {
+  std::uint8_t x[10];
+  std::size_t size;
+
+  EXPECT_DEATH({ samething_core_field_add(x, &size, "TEST", 100); }, ".*");
+}
+#endif  // NDEBUG
+
+TEST(samething_core_field_add, AddsFieldToData) {
+  std::size_t size = 0;
+  std::uint8_t x[100] = {};
+
+  samething_core_field_add(x, &size, "FIELD", sizeof("FIELD") - 1);
+
+  EXPECT_TRUE(std::memcmp(x, "FIELD-", sizeof("FIELD")) == 0);
+  EXPECT_EQ(size, sizeof("FIELD"));  // Accounting for the dash!
 }

@@ -54,7 +54,10 @@ static char* rstrip(char* s) {
 /* Return pointer to first non-whitespace char in given string. */
 static char* lskip(const char* s) {
   while (*s && isspace((unsigned char)(*s))) s++;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
   return (char*)s;
+#pragma GCC diagnostic pop
 }
 
 /* Return pointer to first char (of chars) or inline comment in given string,
@@ -73,7 +76,10 @@ static char* find_chars_or_comment(const char* s, const char* chars) {
     s++;
   }
 #endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
   return (char*)s;
+#pragma GCC diagnostic pop
 }
 
 /* Similar to strncpy, but ensures dest (size bytes) is

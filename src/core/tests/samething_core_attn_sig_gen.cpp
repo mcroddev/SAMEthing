@@ -20,13 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "samething/core.h"
 #include "gtest/gtest.h"
+#include "samething/core.h"
 
+#ifndef NDEBUG
 extern "C" void *samething_dbg_userdata_ = nullptr;
 
-extern "C" void samething_dbg_assert_failed(const char *const,
-                                            const char *const, const int,
-                                            void *) {
+extern "C" [[noreturn]] void samething_dbg_assert_failed(const char *const,
+                                                         const char *const,
+                                                         const int, void *) {
   std::abort();
 }
+#endif  // NDEBUG

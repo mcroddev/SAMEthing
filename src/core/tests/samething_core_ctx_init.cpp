@@ -19,3 +19,67 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+
+#include <cstring>
+
+#include "gtest/gtest.h"
+#include "samething/core.h"
+
+#ifndef NDEBUG
+extern "C" void *samething_dbg_userdata_ = nullptr;
+
+extern "C" [[noreturn]] void samething_dbg_assert_failed(const char *const,
+                                                         const char *const,
+                                                         const int, void *) {
+  std::abort();
+}
+
+TEST(samething_core_ctx_init, AssertsWhenContextIsNULL) {
+  struct samething_core_header header = {};
+  EXPECT_DEATH({ samething_core_ctx_init(nullptr, &header); }, ".*");
+}
+
+TEST(samething_core_ctx_init, AssertsWhenHeaderIsNULL) {
+  struct samething_core_gen_ctx ctx = {};
+  EXPECT_DEATH({ samething_core_ctx_init(&ctx, nullptr); }, ".*");
+}
+#endif  // NDEBUG
+
+TEST(samething_core_ctx_init, InitialHeaderIsCorrect) {
+  static const uint8_t SAMETHING_CORE_INITIAL_HEADER[] = {
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      SAMETHING_CORE_PREAMBLE,
+      'Z',
+      'C',
+      'Z',
+      'C'};
+
+  struct samething_core_gen_ctx ctx = {};
+  struct samething_core_header header = {};
+
+  samething_core_ctx_init(&ctx, &header);
+
+  const int result =
+      std::memcmp(&ctx.header_data, SAMETHING_CORE_INITIAL_HEADER,
+                  sizeof(SAMETHING_CORE_INITIAL_HEADER));
+
+  EXPECT_EQ(result, 0);
+}
+
+TEST(samething_core_ctx_init, OriginatorCodeAddedToHeaderData) {}
+
+TEST(samething_core_ctx_init, EventCodeAddedToHeaderData) {}

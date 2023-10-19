@@ -41,9 +41,11 @@ class SAMEthingApp final : public QObject {
  public:
   SAMEthingApp() noexcept;
 
+#ifndef NDEBUG
   void DebugAssertionEncountered(const char* const expr,
                                  const char* const file_name,
                                  const int line_no) noexcept;
+#endif  // NDEBUG
 
   void Initialize() noexcept;
 

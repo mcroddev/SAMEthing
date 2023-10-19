@@ -31,6 +31,7 @@
 
 SAMEthingApp::SAMEthingApp() noexcept : model_db_({}) {}
 
+#ifndef NDEBUG
 void SAMEthingApp::DebugAssertionEncountered(const char* const expr,
                                              const char* const file_name,
                                              const int line_no) noexcept {
@@ -57,6 +58,7 @@ void SAMEthingApp::DebugAssertionEncountered(const char* const expr,
       return;
   }
 }
+#endif  // NDEBUG
 
 void SAMEthingApp::Initialize() noexcept {
   DatabaseLoad();
@@ -117,10 +119,11 @@ void SAMEthingApp::DatabaseLoad() noexcept {
       // No more lines to read; we're done.
       return nullptr;
     }
-    std::memset(str, 0, num);
+    std::memset(str, 0, static_cast<std::size_t>(num));
 
     const QString line = reader->readLine(num);
-    std::memcpy(str, line.toUtf8().constData(), line.length());
+    std::memcpy(str, line.toUtf8().constData(),
+                static_cast<std::size_t>(line.length()));
     return str;
   };
 
@@ -198,8 +201,8 @@ void SAMEthingApp::SignalsConnectToSlots() noexcept {
 }
 
 void SAMEthingApp::SAMEHeaderPopulate(samething_core_header& header) noexcept {
-  header.attn_sig_duration =
-      main_window_controller_.AttentionSignalDurationGet();
+  header.attn_sig_duration = static_cast<unsigned int>(
+      main_window_controller_.AttentionSignalDurationGet());
 
   std::memcpy(header.callsign,
               main_window_controller_.CallsignGet().toUtf8().constData(),

@@ -20,11 +20,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# Although each toolchain ships with CMake 3.27.1, some IDEs will fail when
+# Although each toolchain ships with CMake 3.27.7, some IDEs will fail when
 # opening the project. This is often times because the built-in CMake version
-# isn't >=3.27.1. Even using a preset, some IDEs do not respect the
+# isn't >=3.27.7. Even using a preset, some IDEs do not respect the
 # "cmakeExecutable" field in configure presets. The easiest solution is to
-# require the most minimal CMake version that satisfies all IDEs.
+# require the most minimal CMake version that satisfies all IDEs, although the
+# better solution is for IDEs to support this field.
 #
 # The FATAL_ERROR option is accepted but ignored by CMake 2.6 and higher. It
 # should be specified so CMake versions 2.4 and lower fail with an error instead
@@ -40,8 +41,9 @@ project(SAMEthing
 # Toolchain files are required so that CMake knows where to look for our custom
 # toolchain.
 if (NOT CMAKE_TOOLCHAIN_FILE)
-  message(FATAL_ERROR "An appropriate toolchain file is required to be "
-          "specified. Use one of the presets to do this for you.")
+  message(FATAL_ERROR
+          "An appropriate toolchain file is required to be specified. Use one "
+          "of the presets to do this for you.")
 endif ()
 
 # Generate a "compile_commands.json" file containing the exact compiler calls
@@ -49,29 +51,13 @@ endif ()
 # required for certain IDEs to provide code completion, error checking, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Set a default build type if one wasn't specified.
-# https://www.kitware.com/cmake-and-the-default-build-type
-function(samething_build_type_default_set BUILD_TYPE_DEFAULT)
-  if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    message(STATUS "Setting the build type to '${BUILD_TYPE_DEFAULT}' as none "
-            "was specified.")
-
-    set(CMAKE_BUILD_TYPE "${BUILD_TYPE_DEFAULT}" CACHE STRING
-        "Choose the type of build." FORCE)
-
-    # Set the possible values of build type for cmake-gui.
-    set_property(CACHE CMAKE_BUILD_TYPE
-                 PROPERTY STRINGS
-                 "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-  endif()
-endfunction()
-
 # Configures the project wide build settings for C targets.
 function(samething_build_settings_c_configure)
   # When targets link to this library, the settings set here will be passed to
   # the target.
   add_library(samething-build-settings-c INTERFACE)
 
+  # Enforce the use of the C17 standard with extensions enabled.
   target_compile_features(samething-build-settings-c INTERFACE
                           c_std_17)
 
@@ -80,11 +66,44 @@ function(samething_build_settings_c_configure)
                                SAMETHING_TESTING)
   endif()
 
-  if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(samething-build-settings-c INTERFACE
-                           -Wall -Werror -Wextra)
+  # These flags are set regardless of the compiler, since we only support Clang
+  # and gcc anyway.
+  target_compile_options(samething-build-settings-c INTERFACE
+                         -fdata-sections
+                         -ffunction-sections
+                         -fstack-usage
+                         -Rpass-analysis=loop-vectorize
+                         -Rpass=loop-vectorize
+                         -Rpass-missed=loop-vectorize
+                         -Wall
+                         -Walloca
+                         -Wcast-align
+                         -Wcast-qual
+                         -Wconversion
+                         -Wdisabled-optimization
+                         -Wdouble-promotion
+                         -Werror
+                         -Wextra
+                         -Wformat=2
+                         -Winline
+                         -Wmissing-include-dirs
+                         -Wmissing-noreturn
+                         -Wno-error=disabled-optimization
+                         -Wno-error=inline
+                         -Wno-error=padded
+                         -Wno-error=unused
+                         -Wnull-dereference
+                         -Wpadded
+                         -Wpointer-arith
+                         -Wshadow
+                         -Wswitch-default
+                         -Wundef
+                         -Wvla
+                         -Wwrite-strings)
 
-    target_link_options(samething-build-settings-c INTERFACE -fuse-ld=lld)
+  if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    target_link_options(samething-build-settings-c INTERFACE
+                        -fuse-ld=lld -Wl,--Map=SAMEthing.map -Wl,--gc-sections)
 
     if (SAMETHING_ENABLE_SANITIZERS)
       target_compile_options(samething-build-settings-c INTERFACE
@@ -107,14 +126,14 @@ function(samething_build_settings_c_configure)
                                -fno-omit-frame-pointer)
       endif()
     else()
-      message(FATAL_ERROR "Unable to set project wide build settings for C "
-              "targets: the build type ${CMAKE_BUILD_TYPE} is "
-              "unhandled!")
+      message(FATAL_ERROR
+              "Unable to set project wide build settings for C targets: the "
+              "build type ${CMAKE_BUILD_TYPE} is unhandled!")
     endif()
   else()
-    message(FATAL_ERROR "Unable to set project wide build settings for C "
-            "targets: the C compiler ${CMAKE_C_COMPILER_ID} is "
-            "unhandled!")
+    message(FATAL_ERROR
+            "Unable to set project wide build settings for C targets: the C "
+            "compiler ${CMAKE_C_COMPILER_ID} is unhandled!")
   endif()
 endfunction()
 
@@ -132,12 +151,42 @@ function(samething_build_settings_cpp_configure)
                                SAMETHING_TESTING)
   endif()
 
+  # These flags are set regardless of the compiler, since we only support Clang
+  # and gcc anyway.
+  target_compile_options(samething-build-settings-cpp INTERFACE
+                         -fdata-sections
+                         -ffunction-sections
+                         -fstack-usage
+                         -Rpass-analysis=loop-vectorize
+                         -Rpass=loop-vectorize
+                         -Rpass-missed=loop-vectorize
+                         -Wall
+                         -Walloca
+                         -Wcast-align
+                         -Wcast-qual
+                         -Wconversion
+                         -Wdisabled-optimization
+                         -Wdouble-promotion
+                         -Werror
+                         -Wextra
+                         -Wformat=2
+                         -Winline
+                         -Wmissing-include-dirs
+                         -Wmissing-noreturn
+                         -Wno-error=disabled-optimization
+                         -Wno-error=inline
+                         -Wno-error=padded
+                         -Wno-error=unused
+                         -Wnull-dereference
+                         -Wpadded
+                         -Wpointer-arith
+                         -Wshadow
+                         -Wswitch-default
+                         -Wundef
+                         -Wvla
+                         -Wwrite-strings)
+
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(samething-build-settings-cpp INTERFACE
-                           -Wall -Werror -Wextra)
-
-    target_link_options(samething-build-settings-cpp INTERFACE -fuse-ld=lld)
-
     if (SAMETHING_ENABLE_SANITIZERS)
       target_compile_options(samething-build-settings-cpp INTERFACE
                              -fno-omit-frame-pointer
@@ -159,20 +208,23 @@ function(samething_build_settings_cpp_configure)
                                -fno-omit-frame-pointer)
       endif()
     else()
-      message(FATAL_ERROR "Unable to set project wide build settings for C++ "
-              "targets: the build type ${CMAKE_BUILD_TYPE} is "
-              "unhandled!")
+      message(FATAL_ERROR
+              "Unable to set project wide build settings for C++ targets: the "
+              "build type ${CMAKE_BUILD_TYPE} is unhandled!")
     endif()
   else()
-    message(FATAL_ERROR "Unable to set project wide build settings for C++ "
-            "targets: the C++ compiler ${CMAKE_CXX_COMPILER_ID} is "
-            "unhandled!")
+    message(FATAL_ERROR
+            "Unable to set project wide build settings for C++ targets: the C++ "
+            "compiler ${CMAKE_CXX_COMPILER_ID} is unhandled!")
   endif()
 endfunction()
 
 function(samething_options_handle)
   option(SAMETHING_BUILD_TESTS "Build the unit tests (enables sanitizers)" OFF)
   option(SAMETHING_BUILD_BENCHMARKS "Build the benchmarks" OFF)
+
+  option(SAMETHING_ENABLE_LTO
+         "Enable link-time optimization (only applies to Release builds)" OFF)
 
   option(SAMETHING_ENABLE_SANITIZERS
          "Enables the address sanitizer and the undefined behavior sanitizer"
@@ -205,11 +257,14 @@ function(samething_tests_enable)
   enable_testing()
 endfunction()
 
-samething_build_type_default_set("Debug")
 samething_build_settings_c_configure()
 samething_build_settings_cpp_configure()
 
 samething_options_handle()
+
+if (SAMETHING_ENABLE_LTO)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE)
+endif()
 
 if (SAMETHING_BUILD_TESTS)
   samething_tests_enable()

@@ -25,19 +25,19 @@
 #include "gtest/gtest.h"
 #include "samething/core.h"
 
-#ifdef SAMETHING_TESTING
+#ifndef NDEBUG
 extern "C" void *samething_dbg_userdata_ = nullptr;
 
-extern "C" void samething_dbg_assert_failed(const char *const,
-                                            const char *const, const int,
-                                            void *) {
+extern "C" [[noreturn]] void samething_dbg_assert_failed(const char *const,
+                                                         const char *const,
+                                                         const int, void *) {
   std::abort();
 }
 
 TEST(samething_core_silence_gen, AssertsWhenContextIsNULL) {
   EXPECT_DEATH({ samething_core_silence_gen(nullptr, 0); }, ".*");
 }
-#endif  // SAMETHING_TESTING
+#endif  // NDEBUG
 
 TEST(samething_core_silence_gen, GeneratesFullChunkOfSilence) {
   struct samething_core_gen_ctx ctx = {};

@@ -20,21 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/** \file samething_core_data.cpp
+ *
+ * These test cases verify that the data values being used are consistent with
+ * the latest version of the EAS protocol as defined by 47 CFR 11.31, which is
+ * located at https://preview.tinyurl.com/eas-ecfr.
+ */
+
 #include "gtest/gtest.h"
 #include "samething/core.h"
 
-/// These test cases verify that the data values being used are consistent with
-/// the latest version of the EAS protocol as defined by 47 CFR 11.31, which
-/// is located at https://preview.tinyurl.com/eas-ecfr.
+#ifndef NDEBUG
 extern "C" void *samething_dbg_userdata_ = nullptr;
 
 extern "C" void samething_dbg_assert_failed(const char *const,
                                             const char *const, const int,
                                             void *) {}
+#endif  // NDEBUG
+
+TEST(samething_core_data, HeaderDataMaxSizeIsCorrect) {
+  EXPECT_EQ(SAMETHING_CORE_HEADER_SIZE_MAX, 268);
+}
 
 /// Ensures that the sample rate is 44100Hz.
 TEST(samething_core_data, SampleRateIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_SAMPLE_RATE, 44100.0F);
+  EXPECT_EQ(SAMETHING_CORE_SAMPLE_RATE, 44100);
 }
 
 /// Ensures that the Preamble is 0xAB.
@@ -42,39 +52,44 @@ TEST(samething_core_data, PreambleIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_PREAMBLE, 0xAB);
 }
 
-/// Ensures that the maximum length of the originator code is 3.
-TEST(samething_core_data, OriginatorCodeLenMaxIsCorrect) {
+/// Ensures that the number of times the Preamble must be transmitted is 16.
+TEST(samething_core_data, PreambleAppearsSixteenTimes) {
+  EXPECT_EQ(SAMETHING_CORE_PREAMBLE_NUM, 16);
+}
+
+/// Ensures that the length of the originator code is 3.
+TEST(samething_core_data, OriginatorCodeLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_CODE_LEN, 3);
 }
 
-/// Ensures that the maximum number of characters for the event code is 3.
-TEST(samething_core_data, EventCodeLenMaxIsCorrect) {
+/// Ensures that the number of characters for the event code is 3.
+TEST(samething_core_data, EventCodeMaxLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_EVENT_CODE_LEN, 3);
 }
 
 /// Ensures that the maximum number of location codes is 31.
-TEST(samething_core_data, LocationCodesNumMaxIsCorrect) {
+TEST(samething_core_data, LocationCodesMaxNumIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_LOCATION_CODES_NUM_MAX, 31);
 }
 
-/// Ensures that the maximum number of characters for the location code is 6.
-TEST(samething_core_data, LocationCodeLenMaxIsCorrect) {
+/// Ensures that the number of characters for the location code is 6.
+TEST(samething_core_data, LocationCodeLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_LOCATION_CODE_LEN, 6);
 }
 
-/// Ensures that the maximum number of characters for a valid time period is 4.
-TEST(samething_core_data, ValidTimePeriodLenMaxIsCorrect) {
+/// Ensures that the number of characters for a valid time period is 4.
+TEST(samething_core_data, ValidTimePeriodLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_VALID_TIME_PERIOD_LEN, 4);
 }
 
 /// Ensures that the maximum number of characters for the originator time is 7.
-TEST(samething_core_data, OriginatorTimeLenMaxIsCorrect) {
+TEST(samething_core_data, OriginatorTimeLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_ORIGINATOR_TIME_LEN, 7);
 }
 
 /// Ensures that the maximum number of characters for the identification code is
 /// 8.
-TEST(samething_core_data, CallsignLenMaxIsCorrect) {
+TEST(samething_core_data, CallsignLenIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_CALLSIGN_LEN, 8);
 }
 
@@ -82,9 +97,6 @@ TEST(samething_core_data, CallsignLenMaxIsCorrect) {
 TEST(samething_core_data, EndOfMessageHeaderSizeIsCorrect) {
   EXPECT_EQ(SAMETHING_CORE_EOM_HEADER_SIZE, 20);
 }
-
-/// Ensures that the End of Message (EOM) header is correct.
-TEST(samething_core_data, EndOfMessageHeaderIsCorrect) {}
 
 TEST(samething_core_data, AFSKBitRateIsCorrect) {
   EXPECT_FLOAT_EQ(SAMETHING_CORE_AFSK_BIT_RATE, 520.83F);
@@ -108,25 +120,21 @@ TEST(samething_core_data, AFSKBitsPerCharIsCorrect) {
 }
 
 TEST(samething_core_data, AFSKSamplesPerBitIsCorrect) {
-  const float kExpectedAFSKSamplesPerBit =
-      SAMETHING_CORE_AFSK_BIT_DURATION * SAMETHING_CORE_SAMPLE_RATE;
-
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_AFSK_SAMPLES_PER_BIT,
-                  kExpectedAFSKSamplesPerBit);
+  EXPECT_EQ(SAMETHING_CORE_AFSK_SAMPLES_PER_BIT, 85);
 }
 
 TEST(samething_core_data, AttnSigFreqFirstIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_FREQ_FIRST, 853.F);
+  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_FREQ_FIRST, 853.0F);
 }
 
 TEST(samething_core_data, AttnSigFreqSecondIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_FREQ_SECOND, 960.F);
+  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_FREQ_SECOND, 960.0F);
 }
 
-TEST(samething_core_data, AttnSigMinLenIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MIN, 8.F);
+TEST(samething_core_data, AttnSigMinDurationIsCorrect) {
+  EXPECT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MIN, 8);
 }
 
-TEST(samething_core_data, AttnSigMaxLenIsCorrect) {
-  EXPECT_FLOAT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MAX, 25.F);
+TEST(samething_core_data, AttnSigMaxDurationIsCorrect) {
+  EXPECT_EQ(SAMETHING_CORE_ATTN_SIG_DURATION_MAX, 25);
 }

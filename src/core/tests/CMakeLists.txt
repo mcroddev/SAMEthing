@@ -20,17 +20,22 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-samething_test_add(samething_core_field_add samething_core_field_add.cpp
-                   SAMEthingCore)
-
 samething_test_add(samething_core_afsk_gen samething_core_afsk_gen.cpp
                    SAMEthingCore)
 
 samething_test_add(samething_core_attn_sig_gen samething_core_attn_sig_gen.cpp
                    SAMEthingCore)
 
+samething_test_add(samething_core_ctx_init samething_core_ctx_init.cpp
+                   SAMEthingCore)
+
 samething_test_add(samething_core_data samething_core_data.cpp SAMEthingCore)
-samething_test_add(samething_core_gen samething_core_samples_gen.cpp SAMEthingCore)
+
+samething_test_add(samething_core_field_add samething_core_field_add.cpp
+                   SAMEthingCore)
+
+samething_test_add(samething_core_samples_gen samething_core_samples_gen.cpp
+                   SAMEthingCore)
 
 samething_test_add(samething_core_silence_gen samething_core_silence_gen.cpp
                    SAMEthingCore)

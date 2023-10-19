@@ -70,7 +70,7 @@ bool samething_audio_devices_get(
     strncpy(devices[audio_device_id], device_name,
             SAMETHING_AUDIO_DEVICE_NAME_LEN_MAX);
   }
-  *num_devices = audio_device_count;
+  *num_devices = (size_t)audio_device_count;
   return true;
 }
 
@@ -79,7 +79,7 @@ bool samething_audio_buffer_play(const struct samething_audio_device *const dev,
                                  const size_t buffer_size) {
   const SDL_AudioDeviceID id = (SDL_AudioDeviceID)(uintptr_t)dev->id;
 
-  return SDL_QueueAudio(id, buffer, sizeof(int16_t) * buffer_size) >= 0;
+  return SDL_QueueAudio(id, buffer, (Uint32)(sizeof(int16_t) * buffer_size)) >= 0;
 }
 
 bool samething_audio_open_device(

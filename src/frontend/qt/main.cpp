@@ -24,6 +24,7 @@
 
 #include "app.h"
 
+#ifndef NDEBUG
 void *samething_dbg_userdata_ = nullptr;
 
 extern "C" void samething_dbg_assert_failed(const char *const expr,
@@ -32,6 +33,7 @@ extern "C" void samething_dbg_assert_failed(const char *const expr,
   auto *app = static_cast<SAMEthingApp *>(userdata);
   app->DebugAssertionEncountered(expr, file_name, line_no);
 }
+#endif  // NDEBUG
 
 /// Program entry point.
 ///
@@ -50,7 +52,9 @@ auto main(int argc, char *argv[]) -> int {
   QApplication::setOrganizationDomain("https://mcrod.dev");
 
   SAMEthingApp samething_app;
+#ifndef NDEBUG
   samething_dbg_userdata_ = &samething_app;
+#endif  // NDEBUG
   samething_app.Initialize();
 
   return QApplication::exec();
